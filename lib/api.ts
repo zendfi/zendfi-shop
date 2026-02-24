@@ -5,12 +5,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.zendfi.tech';
 export async function getStorefront(slug: string): Promise<StorefrontResponse | null> {
   try {
     const res = await fetch(`${API_BASE}/api/v1/shops/${slug}`, {
-      next: { revalidate: 30 },
+      cache: 'no-store',
     });
     if (res.status === 404) return null;
-    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    if (!res.ok) {
+      console.error(`[getStorefront] API error ${res.status} for slug="${slug}"`);
+      throw new Error(`API error: ${res.status}`);
+    }
     return res.json();
-  } catch {
+  } catch (err) {
+    console.error(`[getStorefront] fetch failed for slug="${slug}":`, err);
     return null;
   }
 }
