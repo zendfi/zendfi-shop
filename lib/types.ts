@@ -16,13 +16,12 @@ export interface Shop {
 export interface ShopProduct {
   id: string;
   shop_id: string;
-  merchant_id: string;
   name: string;
   description: string | null;
   price_usd: number;
   token: string;
   payment_link_id: string | null;
-  payment_link_code: string | null;
+  payment_url: string | null;
   quantity_type: 'unlimited' | 'limited';
   quantity_available: number | null;
   quantity_sold: number;
