@@ -48,8 +48,7 @@ export interface CartCheckoutRequest {
 
 export interface CartCheckoutResponse {
   payment_url: string;
-  payment_id: string;
+  link_code: string;
   total_usd: number;
-  total_token: number;
-  token: string;
+  item_count: number;
 }
