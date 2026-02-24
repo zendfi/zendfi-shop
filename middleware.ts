@@ -3,6 +3,12 @@ import { NextRequest, NextResponse } from 'next/server';
 // Extracts the subdomain slug from the host header and passes it as X-Shop-Slug.
 // Supports: {slug}.zendfi.app, {slug}.localhost:3002 (dev)
 export function middleware(request: NextRequest) {
+  // If the Worker already injected x-shop-slug, use it as-is
+  const existingSlug = request.headers.get('x-shop-slug');
+  if (existingSlug) {
+    return NextResponse.next({ request });
+  }
+
   const host = request.headers.get('host') || '';
   const shopBaseDomain = process.env.NEXT_PUBLIC_SHOP_BASE_DOMAIN || 'zendfi.app';
 
