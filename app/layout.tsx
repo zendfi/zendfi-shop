@@ -9,7 +9,7 @@ import BagDrawer from '@/components/BagDrawer';
 import '@/app/globals.css';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = headers();
+  const headersList = await headers();
   const slug = headersList.get('x-shop-slug') || '';
   if (!slug) return { title: 'Shop' };
 
@@ -28,7 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const headersList = headers();
+  const headersList = await headers();
   const slug = headersList.get('x-shop-slug') || '';
 
   // Fetch shop data
