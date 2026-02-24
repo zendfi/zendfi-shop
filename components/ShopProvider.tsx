@@ -1,6 +1,7 @@
 'use client';
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, useEffect, ReactNode } from 'react';
+import { useBag } from '@/lib/useBag';
 import type { Shop, ShopProduct } from '@/lib/types';
 
 interface ShopContextValue {
@@ -24,9 +25,17 @@ interface ShopProviderProps {
   children: ReactNode;
 }
 
+function BagHydrator() {
+  useEffect(() => {
+    useBag.persist.rehydrate();
+  }, []);
+  return null;
+}
+
 export default function ShopProvider({ shop, products, slug, children }: ShopProviderProps) {
   return (
     <ShopContext.Provider value={{ shop, products, slug }}>
+      <BagHydrator />
       {children}
     </ShopContext.Provider>
   );

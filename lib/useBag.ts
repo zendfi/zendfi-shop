@@ -68,6 +68,7 @@ export const useBag = create<BagState>()(
     {
       name: 'zendfi-shop-bag',
       partialize: (state) => ({ items: state.items }),
+      skipHydration: true,
     },
   ),
 );
