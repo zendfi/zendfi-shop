@@ -1,6 +1,6 @@
 import type { StorefrontResponse, CartCheckoutRequest, CartCheckoutResponse } from './types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://api.zendfi.tech';
 
 export async function getStorefront(slug: string): Promise<StorefrontResponse | null> {
   try {
