@@ -7,8 +7,11 @@ export function middleware(request: NextRequest) {
   // x-forwarded-host is the fallback (may be overwritten by CF infra on Worker→Pages hops).
   const shopHost = request.headers.get('x-shop-host') || '';
   const forwardedHost = request.headers.get('x-forwarded-host') || '';
-  const host = shopHost || forwardedHost || request.headers.get('host') || '';
+  const hostHeader = request.headers.get('host') || '';
+  const host = shopHost || forwardedHost || hostHeader;
   const hostname = host.split(':')[0];
+
+  console.log(`[middleware] url=${request.url} x-shop-host="${shopHost}" x-forwarded-host="${forwardedHost}" host="${hostHeader}" resolved-hostname="${hostname}"`);
 
   let slug = request.headers.get('x-shop-slug') || '';
 
@@ -25,6 +28,8 @@ export function middleware(request: NextRequest) {
   }
 
   if (!slug) return NextResponse.next();
+
+  console.log(`[middleware] resolved slug="${slug}" from hostname="${hostname}"`);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-shop-slug', slug);
