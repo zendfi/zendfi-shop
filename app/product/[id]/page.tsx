@@ -1,16 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
 import { cartCheckout } from '@/lib/api';
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function ProductDetailPage({ params }: Props) {
+  const { id } = use(params);
   const router = useRouter();
   const { shop, products, slug } = useShop();
   const { addItem, clearBag } = useBag();
@@ -19,7 +20,7 @@ export default function ProductDetailPage({ params }: Props) {
   const [buyingNow, setBuyingNow] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const product = products.find((p) => p.id === params.id);
+  const product = products.find((p) => p.id === id);
 
   if (!product) {
     return (
