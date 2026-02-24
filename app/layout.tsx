@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
+
+export const runtime = 'edge';
 import { notFound } from 'next/navigation';
 import { getStorefront } from '@/lib/api';
 import ShopProvider from '@/components/ShopProvider';
