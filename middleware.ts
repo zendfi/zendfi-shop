@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 export function middleware(request: NextRequest) {
   const shopBaseDomain = process.env.NEXT_PUBLIC_SHOP_BASE_DOMAIN || 'zendfi.app';
 
-  // x-forwarded-host is set by Cloudflare to the original hostname (e.g. test.zendfi.app)
-  // when the Worker proxies to Pages — use it to extract the slug without Worker header injection
+  // x-shop-host is explicitly set by the Cloudflare Worker with the original subdomain.
+  // x-forwarded-host is the fallback (may be overwritten by CF infra on Worker→Pages hops).
+  const shopHost = request.headers.get('x-shop-host') || '';
   const forwardedHost = request.headers.get('x-forwarded-host') || '';
-  const host = forwardedHost || request.headers.get('host') || '';
+  const host = shopHost || forwardedHost || request.headers.get('host') || '';
   const hostname = host.split(':')[0];
 
   let slug = request.headers.get('x-shop-slug') || '';
