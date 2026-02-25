@@ -43,7 +43,7 @@ export default function AboutModal({ shop, onClose }: Props) {
             onClick={onClose}
         >
             <div
-                className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+                className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-none"
                 style={{ maxHeight: '90dvh' }}
                 onClick={(e) => e.stopPropagation()}
             >
