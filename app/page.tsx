@@ -124,18 +124,6 @@ export default function ShopHomePage() {
         )}
       </main>
 
-      {/* Powered by Zendfi */}
-      <footer className="py-8 text-center">
-        <a
-          href="https://zendfi.tech"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition"
-        >
-          <span>Powered by</span>
-          <span className="font-bold text-slate-500">Zendfi</span>
-        </a>
-      </footer>
     </div>
   );
 }

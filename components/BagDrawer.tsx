@@ -28,6 +28,11 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
     setError(null);
     try {
       if (isMixed) {
+        // Open both windows BEFORE any awaits — popup blockers only allow
+        // window.open that is synchronously triggered by a user click.
+        const ngnWindow = window.open('about:blank', '_blank');
+        const cryptoWindow = window.open('about:blank', '_blank');
+
         // Create two payment links in parallel
         const [ngnRes, cryptoRes] = await Promise.all([
           cartCheckout(slug, {
@@ -41,8 +46,10 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
         ]);
         clearBag();
         closeBag();
-        window.open(ngnRes.payment_url, '_blank');
-        window.open(cryptoRes.payment_url, '_blank');
+        if (ngnWindow) ngnWindow.location.href = ngnRes.payment_url;
+        else window.open(ngnRes.payment_url, '_blank');
+        if (cryptoWindow) cryptoWindow.location.href = cryptoRes.payment_url;
+        else window.open(cryptoRes.payment_url, '_blank');
       } else {
         const onrampOnly = onrampItems.length > 0;
         const res = await cartCheckout(slug, {

@@ -55,6 +55,9 @@ export async function generateMetadata(): Promise<Metadata> {
       description: data.shop.description || `Shop at ${data.shop.name}`,
       siteName: data.shop.name,
     },
+    icons: {
+      icon: '/favicon.ico',
+    },
   };
 }
 
@@ -101,9 +104,25 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           }}
         />
       </head>
-      <body className="bg-[#F9F9F9] min-h-screen font-sans antialiased">
+      <body className="bg-[#F9F9F9] min-h-screen font-sans antialiased flex flex-col">
         <ShopProvider shop={shop} products={products} slug={slug}>
-          {children}
+          <div className="flex-1">
+            {children}
+          </div>
+
+          {/* Powered by Zendfi */}
+          <footer className="py-12 text-center shrink-0">
+            <a
+              href="https://zendfi.tech"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition"
+            >
+              <span>Powered by</span>
+              <img src="/img/zendfi-logo.png" alt="ZendFi" className="h-3.5 opacity-80" />
+            </a>
+          </footer>
+
           <BagDrawer slug={slug} />
         </ShopProvider>
       </body>
