@@ -62,8 +62,16 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
 
   if (!isOpen) return null;
 
-  const total = totalUsd();
-  const primaryToken = onrampItems.length > 0 && cryptoItems.length === 0 ? 'NGN' : (items[0]?.product.token || 'USDC');
+  // Compute per-group totals
+  const totalNgn = onrampItems.reduce(
+    (s, i) => s + (i.product.amount_ngn ?? i.product.price_usd) * i.quantity,
+    0
+  );
+  const totalCrypto = cryptoItems.reduce(
+    (s, i) => s + i.product.price_usd * i.quantity,
+    0
+  );
+  const cryptoToken = cryptoItems[0]?.product.token || 'USDC';
 
   return (
     <>
@@ -196,16 +204,38 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
                 </div>
               )}
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Total</span>
-                <span className="font-bold text-slate-900">
-                  ${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
-                </span>
+              {/* Totals — split by currency when mixed */}
+              <div className="space-y-1.5">
+                {onrampItems.length > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500 flex items-center gap-1">
+                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>account_balance</span>
+                      {isMixed ? 'Bank transfer' : 'Total'}
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      ₦{totalNgn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}
+                    </span>
+                  </div>
+                )}
+                {cryptoItems.length > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-500 flex items-center gap-1">
+                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>paid</span>
+                      {isMixed ? `${cryptoToken} (crypto)` : 'Total'}
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      ${totalCrypto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {cryptoToken}
+                    </span>
+                  </div>
+                )}
               </div>
+
               <p className="text-[10px] text-slate-400 text-center">
                 {isMixed
-                  ? 'Mixed payment — NGN (bank transfer) + USDC at checkout'
-                  : `Paid in ${primaryToken} at checkout`}
+                  ? '2 separate checkouts will open — one for each payment type'
+                  : onrampItems.length > 0
+                    ? 'Pay via bank transfer (NGN)'
+                    : `Paid in ${cryptoToken} on Solana`}
               </p>
               {error && (
                 <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl">{error}</p>
@@ -220,7 +250,9 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
                   ? 'Preparing checkout…'
                   : isMixed
                     ? 'Checkout (2 payments) →'
-                    : `Pay $${total.toLocaleString('en-US', { minimumFractionDigits: 2 })} →`}
+                    : onrampItems.length > 0
+                      ? `Pay ₦${totalNgn.toLocaleString('en-NG', { minimumFractionDigits: 0 })} →`
+                      : `Pay $${totalCrypto.toLocaleString('en-US', { minimumFractionDigits: 2 })} →`}
               </button>
             </div>
           )}
