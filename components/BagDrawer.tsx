@@ -17,17 +17,42 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
 
   const themeColor = shop.theme_color;
 
+  // Split items into onramp (NGN/fiat) vs crypto (USDC) groups
+  const onrampItems = items.filter((i) => i.product.onramp);
+  const cryptoItems = items.filter((i) => !i.product.onramp);
+  const isMixed = onrampItems.length > 0 && cryptoItems.length > 0;
+
   const handleCheckout = async () => {
     if (items.length === 0) return;
     setCheckingOut(true);
     setError(null);
     try {
-      const res = await cartCheckout(slug, {
-        items: items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
-      });
-      clearBag();
-      closeBag();
-      window.location.href = res.payment_url;
+      if (isMixed) {
+        // Create two payment links in parallel
+        const [ngnRes, cryptoRes] = await Promise.all([
+          cartCheckout(slug, {
+            items: onrampItems.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+            onramp_only: true,
+          }),
+          cartCheckout(slug, {
+            items: cryptoItems.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+            onramp_only: false,
+          }),
+        ]);
+        clearBag();
+        closeBag();
+        window.open(ngnRes.payment_url, '_blank');
+        window.open(cryptoRes.payment_url, '_blank');
+      } else {
+        const onrampOnly = onrampItems.length > 0;
+        const res = await cartCheckout(slug, {
+          items: items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+          onramp_only: onrampOnly,
+        });
+        clearBag();
+        closeBag();
+        window.location.href = res.payment_url;
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Checkout failed. Please try again.');
     } finally {
@@ -38,7 +63,7 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
   if (!isOpen) return null;
 
   const total = totalUsd();
-  const primaryToken = items[0]?.product.token || 'USDC';
+  const primaryToken = onrampItems.length > 0 && cryptoItems.length === 0 ? 'NGN' : (items[0]?.product.token || 'USDC');
 
   return (
     <>
@@ -81,66 +106,96 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
                 <p className="text-sm text-slate-400 mt-2">Your bag is empty</p>
               </div>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.product.id}
-                  className="flex items-center gap-3 bg-slate-50 rounded-2xl p-3"
-                >
-                  {/* Image */}
-                  <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0">
-                    {item.product.media_urls?.[0] ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={item.product.media_urls[0]}
-                        alt={item.product.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="material-symbols-outlined text-slate-300" style={{ fontSize: 20 }}>image</span>
-                      </div>
-                    )}
-                  </div>
+              items.map((item) => {
+                // Stock remaining for limited products
+                const stockRemaining =
+                  item.product.quantity_type === 'limited'
+                    ? (item.product.quantity_available ?? 0) - item.product.quantity_sold
+                    : Infinity;
+                const atStockLimit = item.quantity >= stockRemaining;
 
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{item.product.name}</p>
-                    <p className="text-xs font-bold mt-0.5" style={{ color: themeColor }}>
-                      ${(item.product.price_usd * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
+                // Price display: use NGN amount for onramp products when available
+                const priceDisplay = item.product.onramp && item.product.amount_ngn
+                  ? `₦${(item.product.amount_ngn * item.quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+                  : `$${(item.product.price_usd * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
 
-                  {/* Quantity & Remove */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                      className="w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
-                    >
-                      −
-                    </button>
-                    <span className="w-6 text-center text-sm font-semibold text-slate-900">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                      className="w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-sm font-bold hover:bg-slate-50 transition"
-                      style={{ color: themeColor }}
-                    >
-                      +
-                    </button>
-                    <button
-                      onClick={() => removeItem(item.product.id)}
-                      className="ml-1 w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition"
-                    >
-                      <span className="material-symbols-outlined text-slate-400 hover:text-red-400" style={{ fontSize: 14 }}>delete</span>
-                    </button>
+                return (
+                  <div
+                    key={item.product.id}
+                    className="flex items-center gap-3 bg-slate-50 rounded-2xl p-3"
+                  >
+                    {/* Image */}
+                    <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0">
+                      {item.product.media_urls?.[0] ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={item.product.media_urls[0]}
+                          alt={item.product.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="material-symbols-outlined text-slate-300" style={{ fontSize: 20 }}>image</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{item.product.name}</p>
+                      <p className="text-xs font-bold mt-0.5" style={{ color: themeColor }}>
+                        {priceDisplay}
+                      </p>
+                      {item.product.onramp && (
+                        <p className="text-[10px] text-emerald-600 mt-0.5">Paid via bank transfer</p>
+                      )}
+                    </div>
+
+                    {/* Quantity & Remove */}
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                        className="w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+                      >
+                        −
+                      </button>
+                      <span className="w-6 text-center text-sm font-semibold text-slate-900">{item.quantity}</span>
+                      <button
+                        onClick={() => {
+                          if (!atStockLimit) updateQuantity(item.product.id, item.quantity + 1);
+                        }}
+                        disabled={atStockLimit}
+                        className="w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-sm font-bold hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{ color: atStockLimit ? undefined : themeColor }}
+                      >
+                        +
+                      </button>
+                      <button
+                        onClick={() => removeItem(item.product.id)}
+                        className="ml-1 w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition"
+                      >
+                        <span className="material-symbols-outlined text-slate-400 hover:text-red-400" style={{ fontSize: 14 }}>delete</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
           {/* Checkout Footer */}
           {items.length > 0 && (
             <div className="p-4 border-t border-slate-100 space-y-3">
+              {/* Mixed currency notice */}
+              {isMixed && (
+                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                  <span className="material-symbols-outlined text-amber-500 shrink-0" style={{ fontSize: 16 }}>info</span>
+                  <p className="text-[11px] text-amber-700 leading-relaxed">
+                    Your bag has both NGN and USDC items. Two payment tabs will open at checkout — one for each.
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Total</span>
                 <span className="font-bold text-slate-900">
@@ -148,7 +203,9 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 text-center">
-                Paid in {primaryToken} at checkout
+                {isMixed
+                  ? 'Mixed payment — NGN (bank transfer) + USDC at checkout'
+                  : `Paid in ${primaryToken} at checkout`}
               </p>
               {error && (
                 <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl">{error}</p>
@@ -159,7 +216,11 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
                 className="w-full py-4 rounded-2xl text-white font-bold text-sm transition active:scale-[0.98] disabled:opacity-70"
                 style={{ backgroundColor: themeColor }}
               >
-                {checkingOut ? 'Preparing checkout…' : `Pay $${total.toLocaleString('en-US', { minimumFractionDigits: 2 })} →`}
+                {checkingOut
+                  ? 'Preparing checkout…'
+                  : isMixed
+                    ? 'Checkout (2 payments) →'
+                    : `Pay $${total.toLocaleString('en-US', { minimumFractionDigits: 2 })} →`}
               </button>
             </div>
           )}

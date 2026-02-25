@@ -8,6 +8,13 @@ export interface Shop {
   description: string | null;
   theme_color: string;
   is_live: boolean;
+  merchant_name?: string;
+  welcome_message?: string | null;
+  about?: string | null;
+  contact_email?: string | null;
+  twitter_url?: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
   created_at: string;
   updated_at: string;
   product_count?: number;
@@ -28,6 +35,9 @@ export interface ShopProduct {
   media_urls: string[];
   display_order: number;
   is_active: boolean;
+  onramp: boolean;
+  collect_customer_info: boolean;
+  amount_ngn: number | null;
   created_at: string;
 }
 
@@ -44,6 +54,7 @@ export interface CartItem {
 export interface CartCheckoutRequest {
   items: { product_id: string; quantity: number }[];
   customer_email?: string;
+  onramp_only?: boolean;
 }
 
 export interface CartCheckoutResponse {
