@@ -25,9 +25,9 @@ export default function ShopHomePage() {
 
   return (
     <div className="min-h-screen bg-[#F9F9F9]">
-      {/* Sticky Header */}
-      <header className="sticky top-0 z-20 bg-white border-b border-slate-100">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+      {/* Floating Capsule Header */}
+      <header className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-30 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-lg shadow-slate-100/50">
+        <div className="px-4 py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 min-w-0">
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -35,14 +35,14 @@ export default function ShopHomePage() {
             >
               <span className="material-symbols-outlined" style={{ fontSize: 16 }}>storefront</span>
             </div>
-            <h1 className="font-bold text-slate-900 text-base truncate">{shop.name}</h1>
+            <h1 className="font-bold text-slate-900 text-sm truncate">{shop.name}</h1>
           </div>
           {/* Bag button */}
           <button
             onClick={openBag}
-            className="relative flex items-center justify-center w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 transition"
+            className="relative flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 transition"
           >
-            <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 20 }}>shopping_bag</span>
+            <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 18 }}>shopping_bag</span>
             {totalItems > 0 && (
               <span
                 className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white text-[9px] font-bold flex items-center justify-center"
@@ -53,16 +53,9 @@ export default function ShopHomePage() {
             )}
           </button>
         </div>
-
-        {/* Description */}
-        {shop.description && (
-          <div className="max-w-2xl mx-auto px-4 pb-3">
-            <p className="text-xs text-slate-500 leading-relaxed">{shop.description}</p>
-          </div>
-        )}
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-5">
+      <main className="max-w-lg mx-auto px-4 pt-24 pb-10">
         {/* Search */}
         {products.length > 4 && (
           <div className="relative mb-5">

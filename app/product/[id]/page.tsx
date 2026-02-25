@@ -67,20 +67,20 @@ export default function ProductDetailPage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-[#F9F9F9]">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-white border-b border-slate-100">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center gap-3">
+      {/* Floating Capsule Header */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-30 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-lg shadow-slate-100/50">
+        <div className="px-3 py-3 flex items-center gap-3">
           <button
             onClick={() => router.back()}
-            className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
+            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
           >
-            <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 20 }}>arrow_back</span>
+            <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 18 }}>arrow_back</span>
           </button>
           <h1 className="font-bold text-slate-900 text-sm truncate flex-1">{product.name}</h1>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto">
+      <div className="max-w-lg mx-auto pt-20">
         {/* Image Carousel */}
         {images.length > 0 ? (
           <div>
@@ -98,9 +98,8 @@ export default function ProductDetailPage({ params }: Props) {
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition snap-start ${
-                      selectedImage === i ? 'border-primary' : 'border-transparent'
-                    }`}
+                    className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition snap-start ${selectedImage === i ? 'border-primary' : 'border-transparent'
+                      }`}
                     style={selectedImage === i ? { borderColor: themeColor } : {}}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -117,7 +116,7 @@ export default function ProductDetailPage({ params }: Props) {
         )}
 
         {/* Product Info */}
-        <div className="px-4 pt-5 pb-32">
+        <div className="px-4 pt-5 pb-40">
           <div className="flex items-start justify-between gap-3 mb-3">
             <h2 className="text-xl font-bold text-slate-900 leading-tight">{product.name}</h2>
             <p className="text-xl font-bold shrink-0" style={{ color: themeColor }}>
@@ -168,13 +167,13 @@ export default function ProductDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Fixed bottom CTA */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 p-4 safe-area-pb">
-        <div className="max-w-lg mx-auto flex gap-3">
+      {/* Floating Bottom CTA Capsule */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-30 bg-white/80 backdrop-blur-md border border-slate-200/50 p-2 rounded-2xl shadow-xl shadow-slate-100/50">
+        <div className="flex gap-2">
           <button
             onClick={handleAddToBag}
             disabled={outOfStock}
-            className="flex-1 py-4 rounded-2xl border-2 text-sm font-bold text-slate-900 hover:bg-slate-50 transition active:scale-[0.98] disabled:opacity-40"
+            className="flex-1 py-3.5 rounded-xl border-2 text-xs font-bold text-slate-900 hover:bg-slate-50 transition active:scale-[0.98] disabled:opacity-40"
             style={{ borderColor: themeColor }}
           >
             {outOfStock ? 'Sold out' : 'Add to bag'}
@@ -182,14 +181,14 @@ export default function ProductDetailPage({ params }: Props) {
           <button
             onClick={handleBuyNow}
             disabled={outOfStock || buyingNow}
-            className="flex-1 py-4 rounded-2xl text-sm font-bold text-white transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 py-3.5 rounded-xl text-xs font-bold text-white transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: themeColor }}
           >
             {buyingNow ? 'Preparing…' : 'Buy now'}
           </button>
         </div>
         {error && (
-          <p className="max-w-lg mx-auto mt-2 text-xs text-red-500 text-center">{error}</p>
+          <p className="mt-2 text-[10px] text-red-500 text-center font-medium">{error}</p>
         )}
       </div>
     </div>
