@@ -55,6 +55,7 @@ export default function ProductDetailPage({ params }: Props) {
     try {
       const res = await cartCheckout(slug, {
         items: [{ product_id: product.id, quantity }],
+        onramp_only: product.onramp,
       });
       clearBag();
       window.location.href = res.payment_url;
@@ -120,7 +121,9 @@ export default function ProductDetailPage({ params }: Props) {
           <div className="flex items-start justify-between gap-3 mb-3">
             <h2 className="text-xl font-bold text-slate-900 leading-tight">{product.name}</h2>
             <p className="text-xl font-bold shrink-0" style={{ color: themeColor }}>
-              ${product.price_usd.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              {product.onramp && product.amount_ngn
+                ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+                : `$${(product.price_usd * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
             </p>
           </div>
 
@@ -159,10 +162,14 @@ export default function ProductDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Token badge */}
+          {/* Payment method badge */}
           <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>paid</span>
-            Paid in <span className="font-semibold text-slate-500">{product.token}</span> on Solana
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+              {product.onramp ? 'account_balance' : 'paid'}
+            </span>
+            {product.onramp
+              ? 'Pay with bank transfer (NGN)'
+              : <>Paid in <span className="font-semibold text-slate-500">{product.token}</span> on Solana</>}
           </div>
         </div>
       </div>

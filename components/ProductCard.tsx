@@ -68,7 +68,9 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
         )}
         <div className="flex items-center justify-between mt-2">
           <p className="text-sm font-bold" style={{ color: themeColor }}>
-            ${product.price_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {product.onramp && product.amount_ngn
+              ? `₦${product.amount_ngn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+              : `$${product.price_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </p>
           {stockLeft !== null && stockLeft <= 5 && stockLeft > 0 && (
             <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
