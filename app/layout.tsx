@@ -56,11 +56,7 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: data.shop.name,
     },
     icons: {
-      icon: [
-        { url: '/favicon.ico', sizes: '32x32' },
-        { url: '/favicon.ico', sizes: '16x16' },
-      ],
-      apple: '/favicon.ico',
+      icon: '/favicon.ico',
     },
   };
 }
