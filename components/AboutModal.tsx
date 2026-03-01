@@ -29,6 +29,11 @@ const INSTAGRAM_ICON = (
 export default function AboutModal({ shop, onClose }: Props) {
     const themeColor = shop.theme_color;
     const hasSocials = shop.twitter_url || shop.facebook_url || shop.instagram_url;
+    const hoursLabel = shop.is_24_hours
+        ? 'Open 24 hours'
+        : shop.open_time && shop.close_time
+          ? `${shop.open_time} – ${shop.close_time}`
+          : null;
 
     // Close on Escape
     useEffect(() => {
@@ -85,6 +90,33 @@ export default function AboutModal({ shop, onClose }: Props) {
                             <p className="text-sm text-slate-400 italic">This shop hasn&apos;t added an about section yet.</p>
                         )}
                     </div>
+
+                    {/* Location / delivery / hours */}
+                    {(shop.shop_location || shop.can_deliver_nationwide || hoursLabel) && (
+                        <>
+                            <div className="mx-6 border-t border-slate-100" />
+                            <div className="px-6 py-4 flex flex-col gap-2">
+                                {shop.shop_location && (
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        <span className="material-symbols-outlined shrink-0" style={{ fontSize: 16, color: themeColor }}>location_on</span>
+                                        <span>{shop.shop_location}</span>
+                                    </div>
+                                )}
+                                {shop.can_deliver_nationwide && (
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        <span className="material-symbols-outlined shrink-0" style={{ fontSize: 16, color: themeColor }}>local_shipping</span>
+                                        <span>Nationwide delivery available</span>
+                                    </div>
+                                )}
+                                {hoursLabel && (
+                                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                                        <span className="material-symbols-outlined shrink-0" style={{ fontSize: 16, color: themeColor }}>schedule</span>
+                                        <span>{hoursLabel}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
 
                     {/* Divider */}
                     <div className="mx-6 border-t border-slate-100" />

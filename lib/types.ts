@@ -15,6 +15,11 @@ export interface Shop {
   twitter_url?: string | null;
   facebook_url?: string | null;
   instagram_url?: string | null;
+  shop_location?: string | null;
+  can_deliver_nationwide?: boolean;
+  is_24_hours?: boolean;
+  open_time?: string | null;
+  close_time?: string | null;
   created_at: string;
   updated_at: string;
   product_count?: number;

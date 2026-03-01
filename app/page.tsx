@@ -25,7 +25,8 @@ export default function ShopHomePage() {
 
   const themeColor = shop.theme_color;
   const hasAboutInfo = !!(
-    shop.about || shop.contact_email || shop.twitter_url || shop.facebook_url || shop.instagram_url
+    shop.about || shop.contact_email || shop.twitter_url || shop.facebook_url || shop.instagram_url ||
+    shop.shop_location || shop.can_deliver_nationwide || shop.is_24_hours
   );
 
   return (
