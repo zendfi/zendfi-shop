@@ -30,6 +30,7 @@ export interface ShopProduct {
   shop_id: string;
   name: string;
   description: string | null;
+  preferences?: ProductPreference[];
   price_usd: number;
   token: string;
   payment_link_id: string | null;
@@ -46,18 +47,34 @@ export interface ShopProduct {
   created_at: string;
 }
 
+export interface ProductPreference {
+  id?: string;
+  name: string;
+  options: string[];
+  required?: boolean;
+  multi_select?: boolean;
+}
+
 export interface StorefrontResponse {
   shop: Shop;
   products: ShopProduct[];
 }
 
+export interface CartItemPreference {
+  id?: string;
+  name: string;
+  values: string[];
+}
+
 export interface CartItem {
+  key: string;
   product: ShopProduct;
   quantity: number;
+  preferences?: CartItemPreference[];
 }
 
 export interface CartCheckoutRequest {
-  items: { product_id: string; quantity: number }[];
+  items: { product_id: string; quantity: number; preferences?: CartItemPreference[] }[];
   customer_email?: string;
   onramp_only?: boolean;
 }

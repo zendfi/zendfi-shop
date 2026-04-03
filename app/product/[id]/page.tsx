@@ -1,10 +1,11 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
-import { cartCheckout } from '@/lib/api';
+import type { CartItemPreference } from '@/lib/types';
+import ProductCard from '@/components/ProductCard';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -13,18 +14,19 @@ interface Props {
 export default function ProductDetailPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
-  const { shop, products, slug } = useShop();
-  const { addItem, clearBag } = useBag();
+  const { shop, products } = useShop();
+  const { addItem, openBag } = useBag();
+  const totalItems = useBag((s) => s.totalItems());
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [buyingNow, setBuyingNow] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [preferenceSelections, setPreferenceSelections] = useState<Record<string, string | string[]>>({});
+  const [preferenceProductId, setPreferenceProductId] = useState<string | null>(null);
 
   const product = products.find((p) => p.id === id);
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9]">
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F9FA]">
         <div className="text-center px-6">
           <p className="text-slate-500 mb-4">Product not found.</p>
           <button onClick={() => router.back()} className="text-sm font-medium text-slate-900 underline">
@@ -45,61 +47,122 @@ export default function ProductDetailPage({ params }: Props) {
   const maxQty = stockLeft !== null ? Math.min(stockLeft, 10) : 10;
 
   const handleAddToBag = () => {
-    addItem(product, quantity);
-    router.back();
+    addItem(product, quantity, buildSelectedPreferences());
+    openBag();
   };
 
-  const handleBuyNow = async () => {
-    setBuyingNow(true);
-    setError(null);
-    try {
-      const res = await cartCheckout(slug, {
-        items: [{ product_id: product.id, quantity }],
-        onramp_only: product.onramp,
+  const handleBuyNow = () => {
+    addItem(product, quantity, buildSelectedPreferences());
+    router.push('/checkout');
+  };
+
+  const recommendations = products.filter((p) => p.id !== product.id).slice(0, 4);
+
+  useEffect(() => {
+    if (!product) return;
+    if (preferenceProductId === product.id) return;
+
+    const nextSelections: Record<string, string | string[]> = {};
+    if (product.preferences?.length) {
+      product.preferences.forEach((pref) => {
+        if (!pref.options?.length) return;
+        const key = pref.id || pref.name;
+        if (pref.required) {
+          nextSelections[key] = pref.multi_select ? [pref.options[0]] : pref.options[0];
+        }
       });
-      clearBag();
-      window.location.href = res.payment_url;
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Checkout failed');
-    } finally {
-      setBuyingNow(false);
     }
+    setPreferenceSelections(nextSelections);
+    setPreferenceProductId(product.id);
+  }, [product, preferenceProductId]);
+
+  const buildSelectedPreferences = (): CartItemPreference[] | undefined => {
+    if (!product?.preferences?.length) return undefined;
+    const selections = product.preferences.reduce<CartItemPreference[]>((acc, pref) => {
+      const key = pref.id || pref.name;
+      const selection = preferenceSelections[key];
+      const values = Array.isArray(selection)
+        ? selection
+        : selection
+          ? [selection]
+          : [];
+      if (values.length === 0) return acc;
+      acc.push({ id: pref.id, name: pref.name, values });
+      return acc;
+    }, []);
+
+    return selections.length ? selections : undefined;
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9]">
-      {/* Floating Capsule Header */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-30 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-lg shadow-slate-100/50">
-        <div className="px-3 py-3 flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
-          >
-            <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 18 }}>arrow_back</span>
-          </button>
-          <h1 className="font-bold text-slate-900 text-sm truncate flex-1">{product.name}</h1>
-        </div>
-      </div>
+    <div className="min-h-screen bg-[#F8F9FA] text-[#2B3437]">
+      <header className="fixed top-0 left-0 right-0 z-40 border-b border-slate-200/60 bg-white/70 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              onClick={() => router.back()}
+              className="w-9 h-9 rounded border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 transition"
+            >
+              <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 18 }}>arrow_back</span>
+            </button>
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Product detail</p>
+              <h1 className="text-sm font-semibold text-slate-900 truncate tracking-[-0.02em]">
+                {product.name}
+              </h1>
+            </div>
+          </div>
 
-      <div className="max-w-lg mx-auto pt-20">
-        {/* Image Carousel */}
-        {images.length > 0 ? (
-          <div>
-            <div className="aspect-square bg-white overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={images[selectedImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/')}
+              className="hidden sm:flex text-xs uppercase tracking-[0.2em] text-slate-500 hover:text-slate-900 transition"
+            >
+              Shop
+            </button>
+            <button
+              onClick={openBag}
+              className="relative w-10 h-10 rounded border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 transition"
+            >
+              <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 18 }}>shopping_bag</span>
+              {totalItems > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded text-white text-[10px] font-semibold flex items-center justify-center"
+                  style={{ backgroundColor: themeColor }}
+                >
+                  {totalItems}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-16 space-y-16">
+        <section className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] items-start">
+          {/* Image Gallery */}
+          <div className="space-y-4">
+            <div className="aspect-[4/5] bg-white border border-slate-200 rounded overflow-hidden">
+              {images.length > 0 ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={images[selectedImage]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <span className="material-symbols-outlined text-slate-200" style={{ fontSize: 64 }}>image</span>
+                </div>
+              )}
             </div>
             {images.length > 1 && (
-              <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide snap-scroll">
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide snap-scroll">
                 {images.map((url, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition snap-start ${selectedImage === i ? 'border-primary' : 'border-transparent'
+                    className={`w-16 h-16 rounded overflow-hidden border transition snap-start ${selectedImage === i ? 'border-primary' : 'border-slate-200'
                       }`}
                     style={selectedImage === i ? { borderColor: themeColor } : {}}
                   >
@@ -110,94 +173,156 @@ export default function ProductDetailPage({ params }: Props) {
               </div>
             )}
           </div>
-        ) : (
-          <div className="aspect-square bg-white flex items-center justify-center">
-            <span className="material-symbols-outlined text-slate-200" style={{ fontSize: 64 }}>image</span>
-          </div>
-        )}
 
-        {/* Product Info */}
-        <div className="px-4 pt-5 pb-40">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <h2 className="text-xl font-bold text-slate-900 leading-tight">{product.name}</h2>
-            <p className="text-xl font-bold shrink-0" style={{ color: themeColor }}>
-              {product.onramp && product.amount_ngn
-                ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
-                : `$${(product.price_usd * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            </p>
-          </div>
-
-          {product.description && (
-            <p className="text-sm text-slate-600 leading-relaxed mb-4">{product.description}</p>
-          )}
-
-          {/* Stock badge */}
-          {stockLeft !== null && stockLeft > 0 && stockLeft <= 10 && (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              Only {stockLeft} left
-            </div>
-          )}
-
-          {/* Quantity */}
-          {!outOfStock && (
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-sm text-slate-500 font-medium">Qty</span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-600 hover:bg-slate-200 transition"
-                >
-                  −
-                </button>
-                <span className="w-8 text-center text-sm font-bold text-slate-900">{quantity}</span>
-                <button
-                  onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold text-white transition hover:opacity-90"
-                  style={{ backgroundColor: themeColor }}
-                >
-                  +
-                </button>
+          {/* Product Info */}
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                {product.onramp ? 'Bank transfer' : `${product.token} on-chain`}
+              </p>
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <h2 className="text-3xl font-bold text-slate-900 tracking-[-0.03em]">
+                  {product.name}
+                </h2>
+                <p className="text-2xl font-semibold" style={{ color: themeColor }}>
+                  {product.onramp && product.amount_ngn
+                    ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+                    : `$${(product.price_usd * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                </p>
               </div>
+              {product.description && (
+                <p className="text-sm text-slate-600 leading-relaxed max-w-lg">
+                  {product.description}
+                </p>
+              )}
             </div>
-          )}
 
-          {/* Payment method badge */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
-              {product.onramp ? 'account_balance' : 'paid'}
-            </span>
-            {product.onramp
-              ? 'Pay with bank transfer (NGN)'
-              : <>Paid in <span className="font-semibold text-slate-500">{product.token}</span> on Solana</>}
+            {stockLeft !== null && stockLeft > 0 && stockLeft <= 10 && (
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded border border-amber-200 bg-amber-50 text-[11px] text-amber-700 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                Only {stockLeft} left
+              </div>
+            )}
+
+            {/* Preferences */}
+            {product.preferences?.length ? (
+              <div className="space-y-4">
+                {product.preferences.map((pref) => (
+                  <div key={pref.id || pref.name} className="space-y-2">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                      {pref.name}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {pref.options?.length ? (
+                        pref.options.map((option) => {
+                          const key = pref.id || pref.name;
+                          const selection = preferenceSelections[key];
+                          const selected = Array.isArray(selection)
+                            ? selection.includes(option)
+                            : selection === option;
+                          return (
+                            <button
+                              key={option}
+                              onClick={() =>
+                                setPreferenceSelections((prev) => {
+                                  if (pref.multi_select) {
+                                    const current = Array.isArray(prev[key]) ? prev[key] : [];
+                                    const next = current.includes(option)
+                                      ? current.filter((value) => value !== option)
+                                      : [...current, option];
+                                    return { ...prev, [key]: next };
+                                  }
+                                  return { ...prev, [key]: option };
+                                })
+                              }
+                              className={`px-3 py-1.5 rounded border text-xs font-semibold transition ${selected
+                                ? 'border-transparent text-white'
+                                : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                                }`}
+                              style={selected ? { backgroundColor: themeColor } : {}}
+                            >
+                              {option}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <span className="text-xs text-slate-400">No options available.</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {/* Quantity */}
+            {!outOfStock && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs uppercase tracking-[0.2em] text-slate-400">Quantity</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="w-9 h-9 rounded border border-slate-200 bg-white flex items-center justify-center text-base font-bold text-slate-600 hover:bg-slate-50 transition"
+                  >
+                    −
+                  </button>
+                  <span className="w-8 text-center text-sm font-semibold text-slate-900">{quantity}</span>
+                  <button
+                    onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                    className="w-9 h-9 rounded border border-transparent flex items-center justify-center text-base font-bold text-white transition"
+                    style={{ backgroundColor: themeColor }}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={handleAddToBag}
+                disabled={outOfStock}
+                className="py-3 rounded border border-slate-200 text-xs font-semibold text-slate-900 hover:border-slate-300 transition disabled:opacity-40"
+              >
+                {outOfStock ? 'Sold out' : 'Add to bag'}
+              </button>
+              <button
+                onClick={handleBuyNow}
+                disabled={outOfStock}
+                className="py-3 rounded text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-40"
+                style={{ backgroundColor: themeColor }}
+              >
+                Buy now
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-xs text-slate-500">
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
+                {product.onramp ? 'account_balance' : 'paid'}
+              </span>
+              {product.onramp
+                ? 'Pay with bank transfer (NGN)'
+                : <>Paid in <span className="font-semibold text-slate-700">{product.token}</span> on Solana</>}
+            </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* Floating Bottom CTA Capsule */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-30 bg-white/80 backdrop-blur-md border border-slate-200/50 p-2 rounded-2xl shadow-xl shadow-slate-100/50">
-        <div className="flex gap-2">
-          <button
-            onClick={handleAddToBag}
-            disabled={outOfStock}
-            className="flex-1 py-3.5 rounded-xl border-2 text-xs font-bold text-slate-900 hover:bg-slate-50 transition active:scale-[0.98] disabled:opacity-40"
-            style={{ borderColor: themeColor }}
-          >
-            {outOfStock ? 'Sold out' : 'Add to bag'}
-          </button>
-          <button
-            onClick={handleBuyNow}
-            disabled={outOfStock || buyingNow}
-            className="flex-1 py-3.5 rounded-xl text-xs font-bold text-white transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: themeColor }}
-          >
-            {buyingNow ? 'Preparing…' : 'Buy now'}
-          </button>
-        </div>
-        {error && (
-          <p className="mt-2 text-[10px] text-red-500 text-center font-medium">{error}</p>
+        {recommendations.length > 0 && (
+          <section className="space-y-6">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Recommended pairings</p>
+              <h3 className="text-2xl font-semibold text-slate-900 tracking-[-0.03em]">
+                Complete the ensemble.
+              </h3>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {recommendations.map((item) => (
+                <ProductCard key={item.id} product={item} themeColor={themeColor} />
+              ))}
+            </div>
+          </section>
         )}
-      </div>
+      </main>
     </div>
   );
 }

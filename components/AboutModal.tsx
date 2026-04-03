@@ -48,7 +48,7 @@ export default function AboutModal({ shop, onClose }: Props) {
             onClick={onClose}
         >
             <div
-                className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-none"
+                className="relative w-full sm:max-w-md bg-white rounded-t sm:rounded shadow-2xl overflow-hidden animate-slide-up sm:animate-none"
                 style={{ maxHeight: '90dvh' }}
                 onClick={(e) => e.stopPropagation()}
             >
@@ -58,7 +58,7 @@ export default function AboutModal({ shop, onClose }: Props) {
                 {/* Close button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition z-10"
+                    className="absolute top-4 right-4 w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition z-10"
                     aria-label="Close"
                 >
                     <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
@@ -69,7 +69,7 @@ export default function AboutModal({ shop, onClose }: Props) {
                     {/* Header */}
                     <div className="px-6 pt-7 pb-4 flex items-center gap-3">
                         <div
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                            className="w-12 h-12 rounded flex items-center justify-center shrink-0"
                             style={{ backgroundColor: themeColor + '18', color: themeColor }}
                         >
                             <span className="material-symbols-outlined" style={{ fontSize: 24 }}>storefront</span>
@@ -146,7 +146,7 @@ export default function AboutModal({ shop, onClose }: Props) {
                                         href={shop.twitter_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition"
+                                        className="w-9 h-9 rounded flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 transition"
                                         style={{ color: themeColor }}
                                         aria-label="Twitter / X"
                                     >
@@ -158,7 +158,7 @@ export default function AboutModal({ shop, onClose }: Props) {
                                         href={shop.facebook_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition"
+                                        className="w-9 h-9 rounded flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 transition"
                                         style={{ color: themeColor }}
                                         aria-label="Facebook"
                                     >
@@ -170,7 +170,7 @@ export default function AboutModal({ shop, onClose }: Props) {
                                         href={shop.instagram_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition"
+                                        className="w-9 h-9 rounded flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 transition"
                                         style={{ color: themeColor }}
                                         aria-label="Instagram"
                                     >

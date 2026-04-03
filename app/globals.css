@@ -7,6 +7,8 @@
 
 :root {
   --shop-primary: #8B7BF7;
+  --page-bg: #F8F9FA;
+  --text-primary: #2B3437;
 }
 
 * {
@@ -21,6 +23,8 @@ body {
   overflow-x: hidden;
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
+  background: var(--page-bg);
+  color: var(--text-primary);
 }
 
 /* iOS-style momentum scroll */
@@ -43,6 +47,27 @@ body {
 .text-primary { color: var(--shop-primary); }
 .border-primary { border-color: var(--shop-primary); }
 .ring-primary { --tw-ring-color: var(--shop-primary); }
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.6s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+  }
+}
 
 /* Bag slide animation */
 @keyframes slideUp {
