@@ -10,6 +10,12 @@ import { SearchIcon, SearchX, ShieldCheck, Truck, Coins, Sparkles, SlidersHorizo
 type SortBy = 'featured' | 'price_asc' | 'price_desc' | 'newest';
 type Availability = 'all' | 'in_stock' | 'onramp' | 'crypto';
 
+interface PersistedFilters {
+  sortBy?: SortBy;
+  availability?: Availability;
+  tokenFilter?: string;
+}
+
 export default function ShopHomePage() {
   const { shop, products } = useShop();
   const [search, setSearch] = useState('');
@@ -67,6 +73,28 @@ export default function ShopHomePage() {
   const heroFit = shop.hero_image_fit || 'cover';
   const heroPosition = shop.hero_image_position || 'center';
   const activeFilterCount = Number(sortBy !== 'featured') + Number(availability !== 'all') + Number(tokenFilter !== 'all');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const key = `zendfi_shop_filters_${shop.slug}`;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as PersistedFilters;
+      if (parsed.sortBy) setSortBy(parsed.sortBy);
+      if (parsed.availability) setAvailability(parsed.availability);
+      if (parsed.tokenFilter) setTokenFilter(parsed.tokenFilter);
+    } catch {
+      // ignore malformed persisted filters
+    }
+  }, [shop.slug]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const key = `zendfi_shop_filters_${shop.slug}`;
+    const payload: PersistedFilters = { sortBy, availability, tokenFilter };
+    window.localStorage.setItem(key, JSON.stringify(payload));
+  }, [availability, shop.slug, sortBy, tokenFilter]);
 
   useEffect(() => {
     const onScroll = () => setShowStickyTools(window.scrollY > 520);
