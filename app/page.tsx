@@ -5,27 +5,68 @@ import { useShop } from '@/components/ShopProvider';
 import ProductCard from '@/components/ProductCard';
 import Header from '@/components/Header';
 import type { ShopProduct } from '@/lib/types';
-import { SearchIcon, SearchX, ShieldCheck, Truck, Coins, Sparkles } from 'lucide-react';
+import { SearchIcon, SearchX, ShieldCheck, Truck, Coins, Sparkles, SlidersHorizontal, X } from 'lucide-react';
+
+type SortBy = 'featured' | 'price_asc' | 'price_desc' | 'newest';
+type Availability = 'all' | 'in_stock' | 'onramp' | 'crypto';
 
 export default function ShopHomePage() {
   const { shop, products } = useShop();
   const [search, setSearch] = useState('');
   const [showStickyTools, setShowStickyTools] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
+  const [sortBy, setSortBy] = useState<SortBy>('featured');
+  const [availability, setAvailability] = useState<Availability>('all');
+  const [tokenFilter, setTokenFilter] = useState<string>('all');
 
-  const filtered: ShopProduct[] = products
-    .filter((p) => p.is_active)
-    .filter((p) =>
+  const activeProducts = useMemo(() => products.filter((p) => p.is_active), [products]);
+
+  const tokenOptions = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of activeProducts) {
+      if (p.token) set.add(p.token);
+    }
+    return Array.from(set).sort();
+  }, [activeProducts]);
+
+  const filtered: ShopProduct[] = useMemo(() => {
+    let out = activeProducts.filter((p) =>
       search.length === 0 ||
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       (p.description || '').toLowerCase().includes(search.toLowerCase()),
-    )
-    .sort((a, b) => a.display_order - b.display_order);
+    );
+
+    if (availability === 'in_stock') {
+      out = out.filter((p) => p.quantity_type === 'unlimited' || ((p.quantity_available ?? 0) - p.quantity_sold > 0));
+    } else if (availability === 'onramp') {
+      out = out.filter((p) => p.onramp);
+    } else if (availability === 'crypto') {
+      out = out.filter((p) => !p.onramp);
+    }
+
+    if (tokenFilter !== 'all') {
+      out = out.filter((p) => p.token === tokenFilter);
+    }
+
+    if (sortBy === 'price_asc') {
+      out = [...out].sort((a, b) => a.price_usd - b.price_usd);
+    } else if (sortBy === 'price_desc') {
+      out = [...out].sort((a, b) => b.price_usd - a.price_usd);
+    } else if (sortBy === 'newest') {
+      out = [...out].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+    } else {
+      out = [...out].sort((a, b) => a.display_order - b.display_order);
+    }
+
+    return out;
+  }, [activeProducts, availability, search, sortBy, tokenFilter]);
 
   const themeColor = shop.theme_color;
   const hasHero = !!shop.hero_image_url;
   const heroFit = shop.hero_image_fit || 'cover';
   const heroPosition = shop.hero_image_position || 'center';
+  const activeFilterCount = Number(sortBy !== 'featured') + Number(availability !== 'all') + Number(tokenFilter !== 'all');
 
   useEffect(() => {
     const onScroll = () => setShowStickyTools(window.scrollY > 520);
@@ -66,6 +107,107 @@ export default function ShopHomePage() {
     <div className="min-h-screen font-sans">
       <Header />
 
+      {showMobileFilters && (
+        <div className="fixed inset-0 z-50 sm:hidden" onClick={() => setShowMobileFilters(false)}>
+          <div className="absolute inset-0 bg-slate-900/35 backdrop-blur-sm" />
+          <div
+            className="absolute left-0 right-0 bottom-0 rounded-t-3xl bg-white border-t border-slate-200 p-4 max-h-[78dvh] overflow-y-auto"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-heading font-bold text-slate-900">Sort & Filters</h3>
+              <button onClick={() => setShowMobileFilters(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Sort</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'Featured', value: 'featured' as SortBy },
+                    { label: 'Newest', value: 'newest' as SortBy },
+                    { label: 'Price: Low to High', value: 'price_asc' as SortBy },
+                    { label: 'Price: High to Low', value: 'price_desc' as SortBy },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSortBy(opt.value)}
+                      className={`text-left px-3 py-2 rounded-xl text-xs font-semibold border ${sortBy === opt.value ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Availability</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'All', value: 'all' as Availability },
+                    { label: 'In Stock', value: 'in_stock' as Availability },
+                    { label: 'Fiat', value: 'onramp' as Availability },
+                    { label: 'Crypto', value: 'crypto' as Availability },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setAvailability(opt.value)}
+                      className={`text-left px-3 py-2 rounded-xl text-xs font-semibold border ${availability === opt.value ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Token</p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setTokenFilter('all')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${tokenFilter === 'all' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'}`}
+                  >
+                    All tokens
+                  </button>
+                  {tokenOptions.map((token) => (
+                    <button
+                      key={token}
+                      onClick={() => setTokenFilter(token)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${tokenFilter === token ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200'}`}
+                    >
+                      {token}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => {
+                  setSortBy('featured');
+                  setAvailability('all');
+                  setTokenFilter('all');
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700"
+              >
+                Reset
+              </button>
+              <button
+                onClick={() => setShowMobileFilters(false)}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-white"
+                style={{ backgroundColor: themeColor }}
+              >
+                Apply ({filtered.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showStickyTools && (
         <div className="sm:hidden fixed top-[74px] left-0 right-0 z-30 px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}>
           <div className="mx-auto max-w-7xl rounded-full bg-white/92 backdrop-blur-xl border border-slate-200 shadow-[0_10px_24px_rgba(15,23,42,0.12)] px-3 py-2 flex items-center justify-between gap-3">
@@ -76,7 +218,21 @@ export default function ShopHomePage() {
               <SearchIcon size={14} className="text-slate-500" />
               Search products
             </button>
-            <span className="text-[11px] font-semibold text-slate-500">{filtered.length} items</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"
+              >
+                <SlidersHorizontal size={12} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-slate-900 text-white text-[10px] inline-flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              <span className="text-[11px] font-semibold text-slate-500">{filtered.length}</span>
+            </div>
           </div>
         </div>
       )}
@@ -198,6 +354,19 @@ export default function ShopHomePage() {
                   style={{ '--tw-ring-color': themeColor } as React.CSSProperties}
                 />
               </div>
+
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="sm:hidden inline-flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700"
+              >
+                <SlidersHorizontal size={14} />
+                Sort & Filter
+                {activeFilterCount > 0 && (
+                  <span className="w-4 h-4 rounded-full bg-slate-900 text-white text-[10px] inline-flex items-center justify-center">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
             </div>
 
             {filtered.length === 0 ? (
