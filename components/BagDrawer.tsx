@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useBag } from '@/lib/useBag';
 import { cartCheckout } from '@/lib/api';
 import { useShop } from '@/components/ShopProvider';
+import { X, ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 
 interface BagDrawerProps {
   slug: string;
@@ -11,13 +13,12 @@ interface BagDrawerProps {
 
 export default function BagDrawer({ slug }: BagDrawerProps) {
   const { shop } = useShop();
-  const { items, isOpen, closeBag, removeItem, updateQuantity, clearBag, totalUsd } = useBag();
+  const { items, isOpen, closeBag, removeLineItem, updateLineQuantity, clearBag, totalUsd } = useBag();
   const [checkingOut, setCheckingOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const themeColor = shop.theme_color;
 
-  // Split items into onramp (NGN/fiat) vs crypto (USDC) groups
   const onrampItems = items.filter((i) => i.product.onramp);
   const cryptoItems = items.filter((i) => !i.product.onramp);
   const isMixed = onrampItems.length > 0 && cryptoItems.length > 0;
@@ -28,19 +29,24 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
     setError(null);
     try {
       if (isMixed) {
-        // Open both windows BEFORE any awaits — popup blockers only allow
-        // window.open that is synchronously triggered by a user click.
         const ngnWindow = window.open('about:blank', '_blank');
         const cryptoWindow = window.open('about:blank', '_blank');
 
-        // Create two payment links in parallel
         const [ngnRes, cryptoRes] = await Promise.all([
           cartCheckout(slug, {
-            items: onrampItems.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+            items: onrampItems.map((i) => ({
+              product_id: i.product.id,
+              quantity: i.quantity,
+              selected_preferences: i.selected_preferences,
+            })),
             onramp_only: true,
           }),
           cartCheckout(slug, {
-            items: cryptoItems.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+            items: cryptoItems.map((i) => ({
+              product_id: i.product.id,
+              quantity: i.quantity,
+              selected_preferences: i.selected_preferences,
+            })),
             onramp_only: false,
           }),
         ]);
@@ -53,7 +59,11 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
       } else {
         const onrampOnly = onrampItems.length > 0;
         const res = await cartCheckout(slug, {
-          items: items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+          items: items.map((i) => ({
+            product_id: i.product.id,
+            quantity: i.quantity,
+            selected_preferences: i.selected_preferences,
+          })),
           onramp_only: onrampOnly,
         });
         clearBag();
@@ -69,7 +79,6 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
 
   if (!isOpen) return null;
 
-  // Compute per-group totals
   const totalNgn = onrampItems.reduce(
     (s, i) => s + (i.product.amount_ngn ?? i.product.price_usd) * i.quantity,
     0
@@ -82,188 +91,165 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/40 z-40"
-        onClick={closeBag}
-      />
+      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 transition-opacity" onClick={closeBag} />
 
-      {/* Drawer - slides up from bottom on mobile, from right on desktop */}
-      <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-auto sm:top-0 sm:right-0 sm:left-auto sm:w-96 sm:h-full animate-slide-up sm:animate-slide-right">
-        <div className="bg-white sm:h-full rounded-t-3xl sm:rounded-none sm:rounded-l-3xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 20 }}>shopping_bag</span>
-              <h2 className="font-bold text-slate-900">Your bag</h2>
-              {items.length > 0 && (
-                <span
-                  className="w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
-                  style={{ backgroundColor: themeColor }}
-                >
-                  {items.reduce((s, i) => s + i.quantity, 0)}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={closeBag}
-              className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
-            >
-              <span className="material-symbols-outlined text-slate-600" style={{ fontSize: 18 }}>close</span>
-            </button>
+      <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white sm:shadow-2xl flex flex-col rounded-t-3xl sm:rounded-none h-[90vh] sm:max-h-full transform transition-transform duration-500 ease-in-out translate-y-0 sm:translate-x-0">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white sticky top-0 z-10">
+          <div className="flex items-center gap-3">
+            <ShoppingBag size={24} className="text-slate-800" strokeWidth={1.5} />
+            <h2 className="font-heading font-bold text-xl text-slate-900">Your Bag</h2>
+            {items.length > 0 && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: themeColor }}>
+                {items.reduce((s, i) => s + i.quantity, 0)}
+              </span>
+            )}
           </div>
+          <button
+            onClick={closeBag}
+            className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-900"
+          >
+            <X size={20} strokeWidth={2} />
+          </button>
+        </div>
 
-          {/* Items */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <span className="material-symbols-outlined text-slate-200" style={{ fontSize: 48 }}>shopping_bag</span>
-                <p className="text-sm text-slate-400 mt-2">Your bag is empty</p>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
+          {items.length === 0 ? (
+            <div className="h-full flex flex-col items-center justify-center text-center py-12">
+              <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-6">
+                <ShoppingBag size={48} className="text-slate-300" strokeWidth={1} />
               </div>
-            ) : (
-              items.map((item) => {
-                // Stock remaining for limited products
-                const stockRemaining =
-                  item.product.quantity_type === 'limited'
-                    ? (item.product.quantity_available ?? 0) - item.product.quantity_sold
-                    : Infinity;
-                const atStockLimit = item.quantity >= stockRemaining;
-
-                // Price display: use NGN amount for onramp products when available
-                const priceDisplay = item.product.onramp && item.product.amount_ngn
-                  ? `₦${(item.product.amount_ngn * item.quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
-                  : `$${(item.product.price_usd * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+              <p className="text-lg font-medium text-slate-900 mb-2">Your bag is empty.</p>
+              <p className="text-sm text-slate-500 mb-8 max-w-[240px]">Browse our collection and add items to your cart.</p>
+              <button
+                onClick={closeBag}
+                className="px-8 py-3 rounded-xl font-bold text-white shadow-md active:scale-[0.98] transition-transform hover:opacity-90"
+                style={{ backgroundColor: themeColor }}
+              >
+                Continue Shopping
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-6">
+              {items.map((item) => {
+                const { product, quantity } = item;
+                const hasImage = product.media_urls && product.media_urls.length > 0;
+                const stockLeft = product.quantity_type === 'limited' 
+                  ? (product.quantity_available ?? 0) - product.quantity_sold 
+                  : null;
+                const maxQty = stockLeft !== null ? Math.min(stockLeft, 10) : 10;
 
                 return (
-                  <div
-                    key={item.product.id}
-                    className="flex items-center gap-3 bg-slate-50 rounded-2xl p-3"
-                  >
-                    {/* Image */}
-                    <div className="w-14 h-14 rounded-xl bg-slate-100 overflow-hidden shrink-0">
-                      {item.product.media_urls?.[0] ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={item.product.media_urls[0]}
-                          alt={item.product.name}
-                          className="w-full h-full object-cover"
-                        />
+                  <div key={`${product.id}-${JSON.stringify(item.selected_preferences ?? {})}`} className="flex gap-4 group">
+                    <div className="w-24 h-24 rounded-2xl bg-slate-50 overflow-hidden relative shrink-0 border border-slate-100">
+                      {hasImage ? (
+                        <Image src={product.media_urls[0]} alt={product.name} fill className="object-cover" sizes="96px" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <span className="material-symbols-outlined text-slate-300" style={{ fontSize: 20 }}>image</span>
+                        <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
+                          <ShoppingBag size={24} className="text-slate-300" />
                         </div>
                       )}
                     </div>
-
-                    {/* Details */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{item.product.name}</p>
-                      <p className="text-xs font-bold mt-0.5" style={{ color: themeColor }}>
-                        {priceDisplay}
-                      </p>
-                      {item.product.onramp && (
-                        <p className="text-[10px] text-emerald-600 mt-0.5">Paid via bank transfer</p>
+                    <div className="flex-1 flex flex-col justify-between py-1">
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <h3 className="font-semibold text-slate-900 leading-tight mb-1">{product.name}</h3>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 px-2 py-0.5 rounded-md bg-slate-100">
+                            {product.onramp ? 'NGN Transfer' : product.token}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => removeLineItem(product.id, item.selected_preferences)}
+                          className="text-slate-400 hover:text-red-500 transition-colors p-1 -mr-1"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      {item.selected_preferences && Object.keys(item.selected_preferences).length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {Object.entries(item.selected_preferences).map(([key, val]) => (
+                            <span key={key} className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                              {key}: {String(val)}
+                            </span>
+                          ))}
+                        </div>
                       )}
-                    </div>
-
-                    {/* Quantity & Remove */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                        className="w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
-                      >
-                        −
-                      </button>
-                      <span className="w-6 text-center text-sm font-semibold text-slate-900">{item.quantity}</span>
-                      <button
-                        onClick={() => {
-                          if (!atStockLimit) updateQuantity(item.product.id, item.quantity + 1);
-                        }}
-                        disabled={atStockLimit}
-                        className="w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center text-sm font-bold hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                        style={{ color: atStockLimit ? undefined : themeColor }}
-                      >
-                        +
-                      </button>
-                      <button
-                        onClick={() => removeItem(item.product.id)}
-                        className="ml-1 w-7 h-7 rounded-full bg-white shadow-sm border border-slate-200 flex items-center justify-center hover:bg-red-50 hover:border-red-200 transition"
-                      >
-                        <span className="material-symbols-outlined text-slate-400 hover:text-red-400" style={{ fontSize: 14 }}>delete</span>
-                      </button>
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center gap-1 bg-slate-50 rounded-lg p-0.5 border border-slate-200">
+                          <button
+                            onClick={() => updateLineQuantity(product.id, item.selected_preferences, Math.max(1, quantity - 1))}
+                            className="w-7 h-7 rounded flex items-center justify-center text-slate-600 hover:bg-white hover:shadow-sm transition-all"
+                            disabled={quantity <= 1}
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="w-6 text-center text-xs font-bold text-slate-900">{quantity}</span>
+                          <button
+                            onClick={() => updateLineQuantity(product.id, item.selected_preferences, Math.min(maxQty, quantity + 1))}
+                            className="w-7 h-7 rounded flex items-center justify-center text-slate-600 hover:bg-white hover:shadow-sm transition-all"
+                            disabled={quantity >= maxQty}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <p className="text-sm font-bold text-slate-900" style={{ color: themeColor }}>
+                           {product.onramp && product.amount_ngn
+                             ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+                             : `$${((product.price_usd + (item.preference_upcharge_usd ?? 0)) * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 );
-              })
-            )}
-          </div>
-
-          {/* Checkout Footer */}
-          {items.length > 0 && (
-            <div className="p-4 border-t border-slate-100 space-y-3">
-              {/* Mixed currency notice */}
-              {isMixed && (
-                <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                  <span className="material-symbols-outlined text-amber-500 shrink-0" style={{ fontSize: 16 }}>info</span>
-                  <p className="text-[11px] text-amber-700 leading-relaxed">
-                    Your bag has both NGN and USDC items. Two payment tabs will open at checkout — one for each.
-                  </p>
-                </div>
-              )}
-
-              {/* Totals — split by currency when mixed */}
-              <div className="space-y-1.5">
-                {onrampItems.length > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500 flex items-center gap-1">
-                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>account_balance</span>
-                      {isMixed ? 'Bank transfer' : 'Total'}
-                    </span>
-                    <span className="font-bold text-slate-900">
-                      ₦{totalNgn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                )}
-                {cryptoItems.length > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-500 flex items-center gap-1">
-                      <span className="material-symbols-outlined" style={{ fontSize: 13 }}>paid</span>
-                      {isMixed ? `${cryptoToken} (crypto)` : 'Total'}
-                    </span>
-                    <span className="font-bold text-slate-900">
-                      ${totalCrypto.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {cryptoToken}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <p className="text-[10px] text-slate-400 text-center">
-                {isMixed
-                  ? '2 separate checkouts will open — one for each payment type'
-                  : onrampItems.length > 0
-                    ? 'Pay via bank transfer (NGN)'
-                    : `Paid in ${cryptoToken} on Solana`}
-              </p>
-              {error && (
-                <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-xl">{error}</p>
-              )}
-              <button
-                onClick={handleCheckout}
-                disabled={checkingOut}
-                className="w-full py-4 rounded-2xl text-white font-bold text-sm transition active:scale-[0.98] disabled:opacity-70"
-                style={{ backgroundColor: themeColor }}
-              >
-                {checkingOut
-                  ? 'Preparing checkout…'
-                  : isMixed
-                    ? 'Checkout (2 payments) →'
-                    : onrampItems.length > 0
-                      ? `Pay ₦${totalNgn.toLocaleString('en-NG', { minimumFractionDigits: 0 })} →`
-                      : `Pay $${totalCrypto.toLocaleString('en-US', { minimumFractionDigits: 2 })} →`}
-              </button>
+              })}
             </div>
           )}
         </div>
+
+        {/* Footer */}
+        {items.length > 0 && (
+          <div className="p-6 bg-white border-t border-slate-100 sticky bottom-0">
+            <div className="space-y-3 mb-6 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              {totalNgn > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-medium">Fiat Subtotal</span>
+                  <span className="font-bold text-slate-900 leading-none">
+                    ₦{totalNgn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}
+                  </span>
+                </div>
+              )}
+              {totalCrypto > 0 && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-slate-500 font-medium">Crypto Subtotal</span>
+                  <span className="font-bold text-slate-900 leading-none flex items-center gap-1">
+                    ${totalCrypto.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <span className="text-xs text-slate-400 font-normal">({cryptoToken})</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleCheckout}
+              disabled={checkingOut}
+              className="w-full py-4 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 shadow-lg shadow-black/10 flex justify-center items-center"
+              style={{ backgroundColor: themeColor }}
+            >
+              {checkingOut ? 'Preparing Checkout…' : isMixed ? 'Checkout Items (Multiple)' : 'Checkout securely'}
+            </button>
+            {error && (
+              <p className="mt-3 text-xs text-red-500 font-medium text-center bg-red-50 py-2 rounded-lg border border-red-100">
+                {error}
+              </p>
+            )}
+            
+            <p className="text-center text-[10px] uppercase font-bold tracking-widest text-slate-400 mt-6 flex items-center justify-center gap-1.5 opacity-80">
+              Powered by <span className="text-slate-600">Zendfi</span>
+            </p>
+          </div>
+        )}
       </div>
     </>
   );

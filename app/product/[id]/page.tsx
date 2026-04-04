@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation';
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
 import { cartCheckout } from '@/lib/api';
+import Header from '@/components/Header';
+import { ArrowLeft, ImageIcon, Minus, Plus, Building2, Coins, ShieldCheck } from 'lucide-react';
+import Image from 'next/image';
+import type { SelectedPreferences } from '@/lib/types';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -15,21 +19,26 @@ export default function ProductDetailPage({ params }: Props) {
   const router = useRouter();
   const { shop, products, slug } = useShop();
   const { addItem, clearBag } = useBag();
+  
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [buyingNow, setBuyingNow] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedPreferences, setSelectedPreferences] = useState<SelectedPreferences>({});
 
   const product = products.find((p) => p.id === id);
 
   if (!product) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F9F9F9]">
-        <div className="text-center px-6">
-          <p className="text-slate-500 mb-4">Product not found.</p>
-          <button onClick={() => router.back()} className="text-sm font-medium text-slate-900 underline">
-            ← Go back
-          </button>
+      <div className="min-h-screen flex flex-col bg-slate-50 font-sans">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center px-6">
+            <p className="text-slate-500 mb-4">Product not found.</p>
+            <button onClick={() => router.back()} className="text-sm font-medium text-slate-900 hover:underline inline-flex items-center gap-2">
+              <ArrowLeft size={16} /> Go back
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -44,9 +53,26 @@ export default function ProductDetailPage({ params }: Props) {
   const outOfStock = stockLeft !== null && stockLeft <= 0;
   const maxQty = stockLeft !== null ? Math.min(stockLeft, 10) : 10;
 
+  const activePreferences = (product.preferences ?? [])
+    .filter((pref) => pref.is_active)
+    .sort((a, b) => a.display_order - b.display_order);
+
+  const missingRequired = activePreferences.some((pref) => pref.required && (selectedPreferences[pref.key] === undefined || selectedPreferences[pref.key] === ''));
+
+  const preferenceUpcharge = activePreferences.reduce((sum, pref) => {
+    if (pref.type !== 'select') return sum;
+    const selectedValue = selectedPreferences[pref.key];
+    const option = pref.options.find((opt) => opt.is_active && opt.value === selectedValue);
+    return sum + (option?.upcharge_usd ?? 0);
+  }, 0);
+
   const handleAddToBag = () => {
-    addItem(product, quantity);
-    router.back();
+    if (missingRequired) {
+      setError('Please complete all required product preferences.');
+      return;
+    }
+    addItem(product, quantity, selectedPreferences, preferenceUpcharge);
+    setError(null);
   };
 
   const handleBuyNow = async () => {
@@ -67,137 +93,226 @@ export default function ProductDetailPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9F9F9]">
-      {/* Floating Capsule Header */}
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-30 bg-white/80 backdrop-blur-md border border-slate-200/50 rounded-2xl shadow-lg shadow-slate-100/50">
-        <div className="px-3 py-3 flex items-center gap-3">
-          <button
-            onClick={() => router.back()}
-            className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition"
-          >
-            <span className="material-symbols-outlined text-slate-700" style={{ fontSize: 18 }}>arrow_back</span>
-          </button>
-          <h1 className="font-bold text-slate-900 text-sm truncate flex-1">{product.name}</h1>
-        </div>
-      </div>
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      <Header />
 
-      <div className="max-w-lg mx-auto pt-20">
-        {/* Image Carousel */}
-        {images.length > 0 ? (
-          <div>
-            <div className="aspect-square bg-white overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={images[selectedImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
+        {/* Breadcrumb / Back */}
+        <button
+          onClick={() => router.back()}
+          className="group inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition-colors mb-6 sm:mb-8"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+          Back to products
+        </button>
+
+        <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
+          {/* Left: Image Gallery */}
+          <div className="w-full lg:w-1/2 flex flex-col gap-4">
+            <div className="aspect-[4/5] sm:aspect-square bg-slate-100 rounded-3xl overflow-hidden relative border border-slate-200/60">
+              {images.length > 0 ? (
+                <Image
+                  src={images[selectedImage]}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <ImageIcon size={64} className="text-slate-300" strokeWidth={1} />
+                </div>
+              )}
             </div>
+
+            {/* Thumbnails */}
             {images.length > 1 && (
-              <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-hide snap-scroll">
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide py-2">
                 {images.map((url, i) => (
                   <button
                     key={i}
                     onClick={() => setSelectedImage(i)}
-                    className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 border-2 transition snap-start ${selectedImage === i ? 'border-primary' : 'border-transparent'
-                      }`}
-                    style={selectedImage === i ? { borderColor: themeColor } : {}}
+                    className={`relative w-20 sm:w-24 aspect-square rounded-2xl overflow-hidden shrink-0 border-2 transition-all ${
+                      selectedImage === i ? 'ring-2 ring-offset-2' : 'border-transparent opacity-70 hover:opacity-100'
+                    }`}
+                    style={selectedImage === i ? { borderColor: themeColor, '--tw-ring-color': themeColor } as React.CSSProperties : {}}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    <Image src={url} alt="" fill className="object-cover" sizes="96px" />
                   </button>
                 ))}
               </div>
             )}
           </div>
-        ) : (
-          <div className="aspect-square bg-white flex items-center justify-center">
-            <span className="material-symbols-outlined text-slate-200" style={{ fontSize: 64 }}>image</span>
-          </div>
-        )}
 
-        {/* Product Info */}
-        <div className="px-4 pt-5 pb-40">
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <h2 className="text-xl font-bold text-slate-900 leading-tight">{product.name}</h2>
-            <p className="text-xl font-bold shrink-0" style={{ color: themeColor }}>
-              {product.onramp && product.amount_ngn
-                ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
-                : `$${(product.price_usd * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-            </p>
-          </div>
+          {/* Right: Product Details */}
+          <div className="w-full lg:w-1/2 flex flex-col">
+            <div className="sticky top-24">
+              {/* Badges */}
+              {stockLeft !== null && stockLeft > 0 && stockLeft <= 10 && (
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  Only {stockLeft} left
+                </div>
+              )}
 
-          {product.description && (
-            <p className="text-sm text-slate-600 leading-relaxed mb-4">{product.description}</p>
-          )}
+              <h1 className="text-3xl sm:text-4xl font-heading font-bold text-slate-900 leading-tight mb-4">
+                {product.name}
+              </h1>
 
-          {/* Stock badge */}
-          {stockLeft !== null && stockLeft > 0 && stockLeft <= 10 && (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-              Only {stockLeft} left
-            </div>
-          )}
+              <div className="text-2xl sm:text-3xl font-bold mb-8" style={{ color: themeColor }}>
+                {product.onramp && product.amount_ngn
+                  ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+                  : `$${((product.price_usd + preferenceUpcharge) * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              </div>
 
-          {/* Quantity */}
-          {!outOfStock && (
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-sm text-slate-500 font-medium">Qty</span>
-              <div className="flex items-center gap-2">
+              {preferenceUpcharge > 0 && !product.onramp && (
+                <p className="text-xs text-slate-500 -mt-5 mb-6">
+                  Includes ${(preferenceUpcharge * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })} preference upcharge.
+                </p>
+              )}
+
+              {activePreferences.length > 0 && (
+                <div className="mb-8 space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Product Preferences</h3>
+                  {activePreferences.map((pref) => (
+                    <div key={pref.id} className="space-y-2">
+                      <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                        {pref.label}{pref.required ? ' *' : ''}
+                      </label>
+                      {pref.type === 'select' && (
+                        <select
+                          value={String(selectedPreferences[pref.key] ?? '')}
+                          onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: e.target.value }))}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900"
+                        >
+                          <option value="">Select {pref.label}</option>
+                          {pref.options.filter((opt) => opt.is_active).map((opt) => (
+                            <option key={opt.id} value={opt.value}>
+                              {opt.label}{opt.upcharge_usd > 0 ? ` (+$${opt.upcharge_usd.toFixed(2)})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      {pref.type === 'text' && (
+                        <input
+                          type="text"
+                          value={String(selectedPreferences[pref.key] ?? '')}
+                          onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: e.target.value }))}
+                          maxLength={typeof pref.constraints_json?.max_length === 'number' ? pref.constraints_json.max_length : undefined}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900"
+                          placeholder={`Enter ${pref.label.toLowerCase()}`}
+                        />
+                      )}
+                      {pref.type === 'number' && (
+                        <input
+                          type="number"
+                          value={String(selectedPreferences[pref.key] ?? '')}
+                          onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: Number(e.target.value) }))}
+                          min={typeof pref.constraints_json?.min === 'number' ? pref.constraints_json.min : undefined}
+                          max={typeof pref.constraints_json?.max === 'number' ? pref.constraints_json.max : undefined}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900"
+                        />
+                      )}
+                      {pref.type === 'boolean' && (
+                        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(selectedPreferences[pref.key])}
+                            onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: e.target.checked }))}
+                          />
+                          {pref.label}
+                        </label>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Quantity Selector */}
+              {!outOfStock && (
+                <div className="flex items-center gap-4 mb-8">
+                  <span className="text-sm font-bold text-slate-700 uppercase tracking-wider">Quantity</span>
+                  <div className="flex items-center bg-white border border-slate-200 rounded-full p-1">
+                    <button
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
+                      disabled={quantity <= 1}
+                    >
+                      <Minus size={18} />
+                    </button>
+                    <span className="w-12 text-center text-sm font-bold text-slate-900">{quantity}</span>
+                    <button
+                      onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
+                      disabled={quantity >= maxQty}
+                    >
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-10">
                 <button
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-lg font-bold text-slate-600 hover:bg-slate-200 transition"
+                  onClick={handleAddToBag}
+                  disabled={outOfStock || missingRequired}
+                  className="flex-1 py-4 sm:py-5 rounded-2xl border-2 text-sm font-bold text-slate-900 transition-all active:scale-[0.98] disabled:opacity-40 flex items-center justify-center"
+                  style={{ borderColor: outOfStock ? '#e2e8f0' : themeColor }}
                 >
-                  −
+                  {outOfStock ? 'Sold out' : 'Add to bag'}
                 </button>
-                <span className="w-8 text-center text-sm font-bold text-slate-900">{quantity}</span>
                 <button
-                  onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-lg font-bold text-white transition hover:opacity-90"
-                  style={{ backgroundColor: themeColor }}
+                  onClick={handleBuyNow}
+                  disabled={outOfStock || buyingNow}
+                  className="flex-1 py-4 sm:py-5 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center hover:opacity-90 shadow-lg shadow-black/5"
+                  style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
                 >
-                  +
+                  {buyingNow ? 'Preparing…' : 'Buy it now'}
                 </button>
               </div>
-            </div>
-          )}
+              
+              {error && (
+                <div className="p-4 mb-8 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
+                  {error}
+                </div>
+              )}
 
-          {/* Payment method badge */}
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>
-              {product.onramp ? 'account_balance' : 'paid'}
-            </span>
-            {product.onramp
-              ? 'Pay with bank transfer (NGN)'
-              : <>Paid in <span className="font-semibold text-slate-500">{product.token}</span> on Solana</>}
+              {/* Description Box */}
+              {product.description && (
+                <div className="prose prose-slate prose-sm sm:prose-base max-w-none mb-10">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-2 mb-4">
+                    Description
+                  </h3>
+                  <div className="text-slate-600 leading-relaxed whitespace-pre-wrap">
+                    {product.description}
+                  </div>
+                </div>
+              )}
+
+              {/* Features List */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-8 border-t border-slate-200">
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  <ShieldCheck size={20} className="text-slate-400" />
+                  <span>Secure checkout</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-slate-600">
+                  {product.onramp ? (
+                    <Building2 size={20} className="text-slate-400" />
+                  ) : (
+                    <Coins size={20} className="text-slate-400" />
+                  )}
+                  <span>
+                    {product.onramp ? 'Pay with bank transfer' : `Pay with ${product.token}`}
+                  </span>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
-      </div>
-
-      {/* Floating Bottom CTA Capsule */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-lg z-30 bg-white/80 backdrop-blur-md border border-slate-200/50 p-2 rounded-2xl shadow-xl shadow-slate-100/50">
-        <div className="flex gap-2">
-          <button
-            onClick={handleAddToBag}
-            disabled={outOfStock}
-            className="flex-1 py-3.5 rounded-xl border-2 text-xs font-bold text-slate-900 hover:bg-slate-50 transition active:scale-[0.98] disabled:opacity-40"
-            style={{ borderColor: themeColor }}
-          >
-            {outOfStock ? 'Sold out' : 'Add to bag'}
-          </button>
-          <button
-            onClick={handleBuyNow}
-            disabled={outOfStock || buyingNow}
-            className="flex-1 py-3.5 rounded-xl text-xs font-bold text-white transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: themeColor }}
-          >
-            {buyingNow ? 'Preparing…' : 'Buy now'}
-          </button>
-        </div>
-        {error && (
-          <p className="mt-2 text-[10px] text-red-500 text-center font-medium">{error}</p>
-        )}
-      </div>
+      </main>
     </div>
   );
 }

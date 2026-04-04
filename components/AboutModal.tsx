@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import type { Shop } from '@/lib/types';
+import { X, Store, MapPin, Truck, Mail, Info, Clock, ExternalLink } from 'lucide-react';
 
 interface Props {
     shop: Shop;
@@ -28,7 +29,7 @@ const INSTAGRAM_ICON = (
 
 export default function AboutModal({ shop, onClose }: Props) {
     const themeColor = shop.theme_color;
-    const hasSocials = shop.twitter_url || shop.facebook_url || shop.instagram_url;
+    const hasSocials = !!(shop.twitter_url || shop.facebook_url || shop.instagram_url);
     const hoursLabel = shop.is_24_hours
         ? 'Open 24 hours'
         : shop.open_time && shop.close_time
@@ -44,113 +45,106 @@ export default function AboutModal({ shop, onClose }: Props) {
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={onClose}
         >
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-0" />
+
             <div
-                className="relative w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-none"
-                style={{ maxHeight: '90dvh' }}
+                className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-none z-10 font-sans flex flex-col"
+                style={{ maxHeight: 'calc(100dvh - 32px)' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Accent bar */}
-                <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${themeColor}, ${themeColor}99)` }} />
+                <div 
+                  className="h-1.5 w-full bg-gradient-to-r" 
+                  style={{ backgroundImage: `linear-gradient(90deg, ${themeColor}, ${themeColor}77)` }} 
+                />
 
-                {/* Close button */}
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 transition z-10"
-                    aria-label="Close"
-                >
-                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>close</span>
-                </button>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+                  <div className="flex items-center gap-2 text-slate-800">
+                    <Info size={18} />
+                    <h2 className="font-heading font-bold text-lg">About Store</h2>
+                  </div>
+                  <button
+                      onClick={onClose}
+                      className="p-2 -mr-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-800 transition-colors"
+                  >
+                      <X size={20} />
+                  </button>
+                </div>
 
-                {/* Scrollable content */}
-                <div className="overflow-y-auto" style={{ maxHeight: 'calc(90dvh - 4px)' }}>
-                    {/* Header */}
-                    <div className="px-6 pt-7 pb-4 flex items-center gap-3">
+                <div className="overflow-y-auto p-6 flex-1 bg-slate-50/50">
+                    <div className="flex flex-col items-center text-center pb-6 border-b border-slate-100">
                         <div
-                            className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: themeColor + '18', color: themeColor }}
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3 shadow-sm bg-white"
+                            style={{ color: themeColor, border: `1px solid ${themeColor}22` }}
                         >
-                            <span className="material-symbols-outlined" style={{ fontSize: 24 }}>storefront</span>
+                            <Store size={32} />
                         </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-slate-900 leading-tight">{shop.name}</h2>
-                            {shop.description && (
-                                <p className="text-xs text-slate-500 mt-0.5">{shop.description}</p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* About content */}
-                    <div className="px-6 pb-5">
-                        {shop.about ? (
-                            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{shop.about}</p>
-                        ) : (
-                            <p className="text-sm text-slate-400 italic">This shop hasn&apos;t added an about section yet.</p>
+                        <h2 className="text-xl font-heading font-bold text-slate-900">{shop.name}</h2>
+                        {shop.description && (
+                            <p className="text-sm text-slate-500 mt-1 max-w-sm">{shop.description}</p>
                         )}
                     </div>
 
-                    {/* Location / delivery / hours */}
+                    <div className="py-6">
+                        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Our Story</h3>
+                        {shop.about ? (
+                            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{shop.about}</p>
+                        ) : (
+                            <p className="text-sm text-slate-400 italic">This shop hasn't added an about section yet.</p>
+                        )}
+                    </div>
+
                     {(shop.shop_location || shop.can_deliver_nationwide || hoursLabel) && (
-                        <>
-                            <div className="mx-6 border-t border-slate-100" />
-                            <div className="px-6 py-4 flex flex-col gap-2">
+                        <div className="py-6 border-t border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Location & Logistics</h3>
+                            <div className="flex flex-col gap-3">
                                 {shop.shop_location && (
-                                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                                        <span className="material-symbols-outlined shrink-0" style={{ fontSize: 16, color: themeColor }}>location_on</span>
-                                        <span>{shop.shop_location}</span>
+                                    <div className="flex items-start gap-3 text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-100">
+                                        <MapPin size={18} className="mt-0.5 shrink-0" style={{ color: themeColor }} />
+                                        <span className="leading-tight">{shop.shop_location}</span>
                                     </div>
                                 )}
                                 {shop.can_deliver_nationwide && (
-                                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                                        <span className="material-symbols-outlined shrink-0" style={{ fontSize: 16, color: themeColor }}>local_shipping</span>
+                                    <div className="flex items-center gap-3 text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-100">
+                                        <Truck size={18} className="shrink-0" style={{ color: themeColor }} />
                                         <span>Nationwide delivery available</span>
                                     </div>
                                 )}
                                 {hoursLabel && (
-                                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                                        <span className="material-symbols-outlined shrink-0" style={{ fontSize: 16, color: themeColor }}>schedule</span>
+                                    <div className="flex items-center gap-3 text-sm text-slate-700 bg-white p-3 rounded-xl border border-slate-100">
+                                        <Clock size={18} className="shrink-0" style={{ color: themeColor }} />
                                         <span>{hoursLabel}</span>
                                     </div>
                                 )}
                             </div>
-                        </>
+                        </div>
                     )}
 
-                    {/* Divider */}
-                    <div className="mx-6 border-t border-slate-100" />
-
-                    {/* Footer: contact + socials */}
-                    <div className="px-6 py-5 flex items-center justify-between gap-4">
-                        {/* Contact email */}
-                        <div className="min-w-0">
-                            {shop.contact_email ? (
-                                <a
-                                    href={`mailto:${shop.contact_email}`}
-                                    className="flex items-center gap-1.5 text-sm text-slate-600 hover:underline min-w-0"
-                                >
-                                    <span className="material-symbols-outlined shrink-0" style={{ fontSize: 16, color: themeColor }}>mail</span>
-                                    <span className="truncate">{shop.contact_email}</span>
-                                </a>
-                            ) : (
-                                <span />
-                            )}
-                        </div>
-
-                        {/* Socials */}
-                        {hasSocials && (
-                            <div className="flex items-center gap-2 shrink-0">
+                    {(shop.contact_email || hasSocials) && (
+                        <div className="py-6 border-t border-slate-100">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Contact & Support</h3>
+                            
+                            <div className="flex flex-wrap gap-2">
+                                {shop.contact_email && (
+                                    <a
+                                        href={`mailto:${shop.contact_email}`}
+                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 hover:shadow-sm transition-all"
+                                    >
+                                        <Mail size={16} className="text-slate-400" />
+                                        Email Support
+                                    </a>
+                                )}
                                 {shop.twitter_url && (
                                     <a
                                         href={shop.twitter_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition"
-                                        style={{ color: themeColor }}
-                                        aria-label="Twitter / X"
+                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 hover:shadow-sm transition-all"
                                     >
                                         {TWITTER_ICON}
+                                        Twitter <ExternalLink size={12} className="text-slate-300" />
                                     </a>
                                 )}
                                 {shop.facebook_url && (
@@ -158,11 +152,10 @@ export default function AboutModal({ shop, onClose }: Props) {
                                         href={shop.facebook_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition"
-                                        style={{ color: themeColor }}
-                                        aria-label="Facebook"
+                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 hover:shadow-sm transition-all"
                                     >
                                         {FACEBOOK_ICON}
+                                        Facebook <ExternalLink size={12} className="text-slate-300" />
                                     </a>
                                 )}
                                 {shop.instagram_url && (
@@ -170,16 +163,15 @@ export default function AboutModal({ shop, onClose }: Props) {
                                         href={shop.instagram_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition"
-                                        style={{ color: themeColor }}
-                                        aria-label="Instagram"
+                                        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:border-slate-300 hover:shadow-sm transition-all"
                                     >
                                         {INSTAGRAM_ICON}
+                                        Instagram <ExternalLink size={12} className="text-slate-300" />
                                     </a>
                                 )}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

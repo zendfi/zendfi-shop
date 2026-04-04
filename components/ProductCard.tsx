@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useBag } from '@/lib/useBag';
 import type { ShopProduct } from '@/lib/types';
+import { ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 
 interface ProductCardProps {
   product: ShopProduct;
@@ -19,73 +21,78 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
       ? (product.quantity_available ?? 0) - product.quantity_sold
       : null;
   const outOfStock = stockLeft !== null && stockLeft <= 0;
+  const hasRequiredPreferences = (product.preferences ?? []).some((pref) => pref.is_active && pref.required);
 
   const handleAddToBag = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (hasRequiredPreferences) {
+      router.push(`/product/${product.id}`);
+      return;
+    }
     if (!outOfStock) addItem(product);
   };
 
   return (
     <div
-      className="group bg-white rounded-2xl overflow-hidden cursor-pointer active:scale-[0.98] transition-transform shadow-sm"
+      className="group bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 flex flex-col"
       onClick={() => router.push(`/product/${product.id}`)}
     >
-      {/* Image */}
-      <div className="aspect-square bg-slate-100 relative overflow-hidden">
+      {/* Image Container */}
+      <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden flex items-center justify-center">
         {hasImage ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
+          <Image
             src={product.media_urls[0]}
             alt={product.name}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span
-              className="material-symbols-outlined text-slate-300"
-              style={{ fontSize: 36 }}
-            >
-              image
-            </span>
-          </div>
+          <ImageIcon size={48} className="text-slate-200" strokeWidth={1} />
         )}
-        {outOfStock && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
-            <span className="text-xs font-semibold text-slate-500 bg-white/80 px-2 py-0.5 rounded-full">
-              Sold out
-            </span>
-          </div>
-        )}
+        
+        {/* Badges Overlay */}
+        <div className="absolute top-2 left-2 flex flex-col gap-2 z-10">
+           {outOfStock && (
+             <span className="text-[10px] uppercase tracking-wider font-bold text-slate-800 bg-white/90 backdrop-blur px-2.5 py-1 flex items-center shadow-sm">
+               Sold out
+             </span>
+           )}
+           {stockLeft !== null && stockLeft <= 5 && stockLeft > 0 && (
+             <span className="text-[10px] uppercase tracking-wider font-bold text-amber-800 bg-amber-200/90 backdrop-blur px-2.5 py-1 flex items-center shadow-sm">
+               Low Stock
+             </span>
+           )}
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="p-3">
-        <p className="text-sm font-semibold text-slate-900 leading-tight truncate">{product.name}</p>
-        {product.description && (
-          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
-            {product.description}
-          </p>
-        )}
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-sm font-bold" style={{ color: themeColor }}>
+      {/* Info Container */}
+      <div className="p-4 flex flex-col flex-1">
+        <h3 className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{product.name}</h3>
+        <div className="flex-1">
+          {product.description && (
+            <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+              {product.description}
+            </p>
+          )}
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-slate-100/50 flex items-center justify-between">
+          <p className="text-sm font-bold text-slate-900" style={{ color: themeColor }}>
             {product.onramp && product.amount_ngn
               ? `₦${product.amount_ngn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
               : `$${product.price_usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           </p>
-          {stockLeft !== null && stockLeft <= 5 && stockLeft > 0 && (
-            <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
-              {stockLeft} left
-            </span>
-          )}
         </div>
 
+        {/* Quick Add Button */}
         <button
           onClick={handleAddToBag}
           disabled={outOfStock}
-          className="w-full mt-2 py-2 rounded-xl text-xs font-semibold text-white transition active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full mt-3 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:bg-opacity-90"
           style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
         >
-          {outOfStock ? 'Sold out' : 'Add to bag'}
+          {outOfStock ? 'Sold Out' : hasRequiredPreferences ? 'Choose Options' : 'Quick Add'}
         </button>
       </div>
     </div>

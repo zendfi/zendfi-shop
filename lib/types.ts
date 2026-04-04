@@ -10,6 +10,9 @@ export interface Shop {
   is_live: boolean;
   merchant_name?: string;
   welcome_message?: string | null;
+  hero_image_url?: string;
+  hero_headline?: string;
+  hero_cta?: string;
   about?: string | null;
   contact_email?: string | null;
   twitter_url?: string | null;
@@ -43,8 +46,32 @@ export interface ShopProduct {
   onramp: boolean;
   collect_customer_info: boolean;
   amount_ngn: number | null;
+  preferences?: ProductPreferenceDefinition[];
   created_at: string;
 }
+
+export interface ProductPreferenceOption {
+  id: string;
+  value: string;
+  label: string;
+  upcharge_usd: number;
+  display_order: number;
+  is_active: boolean;
+}
+
+export interface ProductPreferenceDefinition {
+  id: string;
+  key: string;
+  label: string;
+  type: 'select' | 'text' | 'number' | 'boolean';
+  required: boolean;
+  constraints_json: Record<string, unknown>;
+  display_order: number;
+  is_active: boolean;
+  options: ProductPreferenceOption[];
+}
+
+export type SelectedPreferences = Record<string, unknown>;
 
 export interface StorefrontResponse {
   shop: Shop;
@@ -54,12 +81,23 @@ export interface StorefrontResponse {
 export interface CartItem {
   product: ShopProduct;
   quantity: number;
+  selected_preferences?: SelectedPreferences;
+  preference_upcharge_usd?: number;
 }
 
 export interface CartCheckoutRequest {
-  items: { product_id: string; quantity: number }[];
+  items: { product_id: string; quantity: number; selected_preferences?: SelectedPreferences }[];
   customer_email?: string;
   onramp_only?: boolean;
+}
+
+export interface CartCheckoutLineItem {
+  product_id: string;
+  quantity: number;
+  unit_price_usd: number;
+  preference_upcharge_usd: number;
+  line_total_usd: number;
+  selected_preferences: SelectedPreferences;
 }
 
 export interface CartCheckoutResponse {
@@ -67,4 +105,5 @@ export interface CartCheckoutResponse {
   link_code: string;
   total_usd: number;
   item_count: number;
+  line_items?: CartCheckoutLineItem[];
 }
