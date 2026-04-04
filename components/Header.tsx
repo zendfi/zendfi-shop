@@ -3,7 +3,7 @@
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
 import { ShoppingBag, Search, Info } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AboutModal from '@/components/AboutModal';
 
 export default function Header() {
@@ -11,6 +11,7 @@ export default function Header() {
   const openBag = useBag((s) => s.openBag);
   const totalItems = useBag((s) => s.totalItems());
   const [showAbout, setShowAbout] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const themeColor = shop.theme_color;
   const hasAboutInfo = !!(
@@ -24,13 +25,23 @@ export default function Header() {
     searchInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <>
       {showAbout && <AboutModal shop={shop} onClose={() => setShowAbout(false)} />}
 
-      <header className="sticky top-3 z-40 px-3 sm:px-6 lg:px-8">
+      <header
+        className={`sticky z-40 px-3 sm:px-6 lg:px-8 transition-all duration-300 ${scrolled ? 'top-2' : 'top-3'}`}
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}
+      >
         <div className="max-w-7xl mx-auto">
-          <div className="h-[64px] rounded-full bg-white/88 backdrop-blur-xl border border-white shadow-[0_12px_34px_rgba(15,23,42,0.14)] px-4 sm:px-6 flex items-center justify-between">
+          <div className={`rounded-full bg-white/88 backdrop-blur-xl border border-white px-3 sm:px-6 flex items-center justify-between transition-all duration-300 ${scrolled ? 'h-[54px] shadow-[0_10px_24px_rgba(15,23,42,0.12)]' : 'h-[60px] sm:h-[64px] shadow-[0_12px_34px_rgba(15,23,42,0.14)]'}`}>
             <div className="flex items-center min-w-0">
               <h1 className="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight truncate">{shop.name}</h1>
             </div>
@@ -38,7 +49,7 @@ export default function Header() {
             <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={focusSearch}
-              className="p-2 text-slate-600 hover:text-slate-900 hidden sm:block transition-colors"
+              className="p-2 text-slate-600 hover:text-slate-900 transition-colors"
               aria-label="Search products"
             >
               <Search size={20} strokeWidth={1.5} />

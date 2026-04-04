@@ -11,6 +11,8 @@ export interface Shop {
   merchant_name?: string;
   welcome_message?: string | null;
   hero_image_url?: string;
+  hero_image_fit?: 'cover' | 'contain';
+  hero_image_position?: 'center' | 'top' | 'bottom' | 'left' | 'right';
   hero_headline?: string;
   hero_cta?: string;
   about?: string | null;

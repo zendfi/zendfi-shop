@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
@@ -27,6 +27,15 @@ export default function ProductDetailPage({ params }: Props) {
   const [selectedPreferences, setSelectedPreferences] = useState<SelectedPreferences>({});
 
   const product = products.find((p) => p.id === id);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!id) return;
+    const raw = window.localStorage.getItem('zendfi_recently_viewed');
+    const prev = raw ? (JSON.parse(raw) as string[]) : [];
+    const next = [id, ...(Array.isArray(prev) ? prev.filter((item) => item !== id) : [])].slice(0, 12);
+    window.localStorage.setItem('zendfi_recently_viewed', JSON.stringify(next));
+  }, [id]);
 
   if (!product) {
     return (
@@ -102,7 +111,7 @@ export default function ProductDetailPage({ params }: Props) {
     <div className="min-h-screen font-sans flex flex-col">
       <Header />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-28 sm:pb-12 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-32 sm:pb-12 w-full">
         {/* Breadcrumb / Back */}
         <button
           onClick={() => router.back()}
@@ -153,7 +162,7 @@ export default function ProductDetailPage({ params }: Props) {
 
           {/* Right: Product Details */}
           <div className="w-full lg:w-1/2 flex flex-col">
-            <div className="sticky top-24 bg-white/78 backdrop-blur-xl border border-white rounded-3xl p-5 sm:p-7 shadow-[0_18px_46px_rgba(15,23,42,0.08)]">
+            <div className="lg:sticky lg:top-24 bg-white/78 backdrop-blur-xl border border-white rounded-3xl p-5 sm:p-7 shadow-[0_18px_46px_rgba(15,23,42,0.08)]">
               {/* Badges */}
               {stockLeft !== null && stockLeft > 0 && stockLeft <= 10 && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider mb-4">
@@ -321,7 +330,7 @@ export default function ProductDetailPage({ params }: Props) {
       </main>
 
       {!outOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 lg:hidden z-30 border-t border-slate-200 bg-white/95 backdrop-blur px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 lg:hidden z-30 border-t border-slate-200 bg-white/95 backdrop-blur px-4 pt-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <div className="max-w-7xl mx-auto flex items-center gap-3">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total</p>
