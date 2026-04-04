@@ -27,53 +27,54 @@ export default function ShopHomePage() {
     <div className="min-h-screen font-sans">
       <Header />
 
-      <main className="pb-20 pt-6 sm:pt-8">
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="surface-card rounded-[30px] overflow-hidden reveal-up">
+      <main className="pb-20 pt-3 sm:pt-5">
+        <section className="w-full reveal-up">
+          <div className="relative w-full h-[58vh] sm:h-[620px] overflow-hidden">
             {hasHero ? (
-              <div className="relative w-full h-[52vh] sm:h-[520px]">
+              <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={shop.hero_image_url}
                   alt={shop.hero_headline || shop.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-900/30 to-slate-900/10" />
-                <div className="absolute inset-0 flex items-end sm:items-center">
-                  <div className="px-6 sm:px-10 pb-8 sm:pb-0 max-w-2xl">
-                    <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.28em] text-white/75 mb-3">
-                      Premium storefront
-                    </p>
-                    <h2 className="text-3xl sm:text-5xl font-heading font-bold text-white leading-tight">
-                      {shop.hero_headline || `Welcome to ${shop.name}`}
-                    </h2>
-                    {shop.hero_cta && (
-                      <a
-                        href="#products"
-                        className="inline-flex mt-6 px-6 py-3 rounded-full text-sm font-bold text-white transition-transform active:scale-95"
-                        style={{ backgroundColor: themeColor }}
-                      >
-                        {shop.hero_cta}
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
+              </>
             ) : (
-              <div className="px-6 sm:px-10 py-12 sm:py-16 bg-gradient-to-br from-slate-900 to-slate-800">
-                <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.28em] text-white/65 mb-3">
-                  Premium storefront
-                </p>
-                <h2 className="text-3xl sm:text-5xl font-heading font-bold text-white leading-tight max-w-3xl">
-                  {shop.hero_headline || `Welcome to ${shop.name}`}
-                </h2>
-                <p className="text-sm sm:text-base text-white/70 mt-4 max-w-xl">
-                  Explore curated products with secure checkout and flexible payment rails.
-                </p>
-              </div>
+              <div className="absolute inset-0" style={{ backgroundColor: themeColor }} />
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-5 bg-white/70 border-t border-slate-200/70">
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/70 via-slate-900/35 to-slate-900/15" />
+            <div className="absolute inset-0 flex items-end sm:items-center">
+              <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+                <div className="max-w-3xl pb-8 sm:pb-0">
+                  {shop.welcome_message && (
+                    <p className="text-[11px] sm:text-xs font-semibold uppercase tracking-[0.28em] text-white/75 mb-3">
+                      {shop.welcome_message}
+                    </p>
+                  )}
+                  <h2 className="text-3xl sm:text-5xl font-heading font-bold text-white leading-tight">
+                    {shop.hero_headline || `Welcome to ${shop.name}`}
+                  </h2>
+                  {shop.description && (
+                    <p className="text-sm sm:text-base text-white/80 mt-4 max-w-2xl leading-relaxed">
+                      {shop.description}
+                    </p>
+                  )}
+                  {shop.hero_cta && (
+                    <a
+                      href="#products"
+                      className="inline-flex mt-6 px-6 py-3 rounded-full text-sm font-bold text-slate-900 transition-transform active:scale-95 bg-white"
+                    >
+                      {shop.hero_cta}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
+            <div className="surface-card rounded-3xl grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-5 border border-slate-200/70">
               <div className="rounded-2xl bg-white border border-slate-200 px-4 py-3 flex items-center gap-3">
                 <ShieldCheck size={18} className="text-slate-500" />
                 <div>
@@ -134,7 +135,7 @@ export default function ShopHomePage() {
                 <p className="text-sm text-slate-400 mt-1">Check back later for new arrivals.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-7">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                 {filtered.map((product) => (
                   <ProductCard
                     key={product.id}
