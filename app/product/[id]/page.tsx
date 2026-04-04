@@ -57,10 +57,12 @@ export default function ProductDetailPage({ params }: Props) {
     .filter((pref) => pref.is_active)
     .sort((a, b) => a.display_order - b.display_order);
 
+  const isSelectLike = (type: string) => type === 'select' || type === 'dropdown';
+
   const missingRequired = activePreferences.some((pref) => pref.required && (selectedPreferences[pref.key] === undefined || selectedPreferences[pref.key] === ''));
 
   const preferenceUpcharge = activePreferences.reduce((sum, pref) => {
-    if (pref.type !== 'select') return sum;
+    if (!isSelectLike(pref.type)) return sum;
     const selectedValue = selectedPreferences[pref.key];
     const option = pref.options.find((opt) => opt.is_active && opt.value === selectedValue);
     return sum + (option?.upcharge_usd ?? 0);
@@ -76,11 +78,15 @@ export default function ProductDetailPage({ params }: Props) {
   };
 
   const handleBuyNow = async () => {
+    if (missingRequired) {
+      setError('Please complete all required product preferences.');
+      return;
+    }
     setBuyingNow(true);
     setError(null);
     try {
       const res = await cartCheckout(slug, {
-        items: [{ product_id: product.id, quantity }],
+        items: [{ product_id: product.id, quantity, selected_preferences: selectedPreferences }],
         onramp_only: product.onramp,
       });
       clearBag();
@@ -93,10 +99,10 @@ export default function ProductDetailPage({ params }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+    <div className="min-h-screen font-sans flex flex-col">
       <Header />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-28 sm:pb-12 w-full">
         {/* Breadcrumb / Back */}
         <button
           onClick={() => router.back()}
@@ -109,7 +115,7 @@ export default function ProductDetailPage({ params }: Props) {
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
           {/* Left: Image Gallery */}
           <div className="w-full lg:w-1/2 flex flex-col gap-4">
-            <div className="aspect-[4/5] sm:aspect-square bg-slate-100 rounded-3xl overflow-hidden relative border border-slate-200/60">
+            <div className="aspect-[4/5] sm:aspect-square bg-gradient-to-br from-slate-100 to-slate-50 rounded-3xl overflow-hidden relative border border-slate-200/60 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
               {images.length > 0 ? (
                 <Image
                   src={images[selectedImage]}
@@ -147,7 +153,7 @@ export default function ProductDetailPage({ params }: Props) {
 
           {/* Right: Product Details */}
           <div className="w-full lg:w-1/2 flex flex-col">
-            <div className="sticky top-24">
+            <div className="sticky top-24 bg-white/78 backdrop-blur-xl border border-white rounded-3xl p-5 sm:p-7 shadow-[0_18px_46px_rgba(15,23,42,0.08)]">
               {/* Badges */}
               {stockLeft !== null && stockLeft > 0 && stockLeft <= 10 && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider mb-4">
@@ -173,18 +179,18 @@ export default function ProductDetailPage({ params }: Props) {
               )}
 
               {activePreferences.length > 0 && (
-                <div className="mb-8 space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-8 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/75 p-4">
                   <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Product Preferences</h3>
                   {activePreferences.map((pref) => (
                     <div key={pref.id} className="space-y-2">
                       <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
                         {pref.label}{pref.required ? ' *' : ''}
                       </label>
-                      {pref.type === 'select' && (
+                      {isSelectLike(pref.type) && (
                         <select
                           value={String(selectedPreferences[pref.key] ?? '')}
                           onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
                         >
                           <option value="">Select {pref.label}</option>
                           {pref.options.filter((opt) => opt.is_active).map((opt) => (
@@ -200,7 +206,7 @@ export default function ProductDetailPage({ params }: Props) {
                           value={String(selectedPreferences[pref.key] ?? '')}
                           onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: e.target.value }))}
                           maxLength={typeof pref.constraints_json?.max_length === 'number' ? pref.constraints_json.max_length : undefined}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
                           placeholder={`Enter ${pref.label.toLowerCase()}`}
                         />
                       )}
@@ -211,7 +217,7 @@ export default function ProductDetailPage({ params }: Props) {
                           onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: Number(e.target.value) }))}
                           min={typeof pref.constraints_json?.min === 'number' ? pref.constraints_json.min : undefined}
                           max={typeof pref.constraints_json?.max === 'number' ? pref.constraints_json.max : undefined}
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900"
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
                         />
                       )}
                       {pref.type === 'boolean' && (
@@ -258,7 +264,7 @@ export default function ProductDetailPage({ params }: Props) {
                 <button
                   onClick={handleAddToBag}
                   disabled={outOfStock || missingRequired}
-                  className="flex-1 py-4 sm:py-5 rounded-2xl border-2 text-sm font-bold text-slate-900 transition-all active:scale-[0.98] disabled:opacity-40 flex items-center justify-center"
+                  className="flex-1 py-4 sm:py-5 rounded-2xl border-2 text-sm font-bold text-slate-900 transition-all active:scale-[0.98] disabled:opacity-40 flex items-center justify-center bg-white"
                   style={{ borderColor: outOfStock ? '#e2e8f0' : themeColor }}
                 >
                   {outOfStock ? 'Sold out' : 'Add to bag'}
@@ -266,7 +272,7 @@ export default function ProductDetailPage({ params }: Props) {
                 <button
                   onClick={handleBuyNow}
                   disabled={outOfStock || buyingNow}
-                  className="flex-1 py-4 sm:py-5 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center hover:opacity-90 shadow-lg shadow-black/5"
+                  className="flex-1 py-4 sm:py-5 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center hover:opacity-90 shadow-[0_14px_32px_rgba(15,23,42,0.16)]"
                   style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
                 >
                   {buyingNow ? 'Preparing…' : 'Buy it now'}
@@ -293,11 +299,11 @@ export default function ProductDetailPage({ params }: Props) {
 
               {/* Features List */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-8 border-t border-slate-200">
-                <div className="flex items-center gap-3 text-sm text-slate-600">
+                <div className="flex items-center gap-3 text-sm text-slate-600 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                   <ShieldCheck size={20} className="text-slate-400" />
                   <span>Secure checkout</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-slate-600">
+                <div className="flex items-center gap-3 text-sm text-slate-600 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                   {product.onramp ? (
                     <Building2 size={20} className="text-slate-400" />
                   ) : (
@@ -313,6 +319,36 @@ export default function ProductDetailPage({ params }: Props) {
           </div>
         </div>
       </main>
+
+      {!outOfStock && (
+        <div className="fixed bottom-0 left-0 right-0 lg:hidden z-30 border-t border-slate-200 bg-white/95 backdrop-blur px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center gap-3">
+            <div className="min-w-0">
+              <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total</p>
+              <p className="text-sm font-bold" style={{ color: themeColor }}>
+                {product.onramp && product.amount_ngn
+                  ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+                  : `$${((product.price_usd + preferenceUpcharge) * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+              </p>
+            </div>
+            <button
+              onClick={handleAddToBag}
+              disabled={missingRequired}
+              className="flex-1 py-3 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 disabled:opacity-50"
+            >
+              Add to bag
+            </button>
+            <button
+              onClick={handleBuyNow}
+              disabled={buyingNow || missingRequired}
+              className="flex-1 py-3 rounded-xl text-xs font-bold text-white disabled:opacity-50"
+              style={{ backgroundColor: themeColor }}
+            >
+              {buyingNow ? 'Preparing...' : 'Buy now'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

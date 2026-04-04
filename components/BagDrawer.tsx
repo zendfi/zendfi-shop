@@ -84,7 +84,7 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
     0
   );
   const totalCrypto = cryptoItems.reduce(
-    (s, i) => s + i.product.price_usd * i.quantity,
+    (s, i) => s + (i.product.price_usd + (i.preference_upcharge_usd ?? 0)) * i.quantity,
     0
   );
   const cryptoToken = cryptoItems[0]?.product.token || 'USDC';
@@ -93,10 +93,10 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
     <>
       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 transition-opacity" onClick={closeBag} />
 
-      <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white sm:shadow-2xl flex flex-col rounded-t-3xl sm:rounded-none h-[90vh] sm:max-h-full transform transition-transform duration-500 ease-in-out translate-y-0 sm:translate-x-0">
+      <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white/95 backdrop-blur-xl sm:shadow-2xl flex flex-col rounded-t-3xl sm:rounded-none h-[90vh] sm:max-h-full transform transition-transform duration-500 ease-in-out translate-y-0 sm:translate-x-0 border-l border-white">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white sticky top-0 z-10">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-white/90 sticky top-0 z-10 backdrop-blur">
           <div className="flex items-center gap-3">
             <ShoppingBag size={24} className="text-slate-800" strokeWidth={1.5} />
             <h2 className="font-heading font-bold text-xl text-slate-900">Your Bag</h2>
@@ -118,7 +118,7 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
         <div className="flex-1 overflow-y-auto p-6 scrollbar-hide">
           {items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center py-12">
-              <div className="w-24 h-24 rounded-full bg-slate-50 flex items-center justify-center mb-6">
+              <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center mb-6">
                 <ShoppingBag size={48} className="text-slate-300" strokeWidth={1} />
               </div>
               <p className="text-lg font-medium text-slate-900 mb-2">Your bag is empty.</p>
@@ -142,7 +142,7 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
                 const maxQty = stockLeft !== null ? Math.min(stockLeft, 10) : 10;
 
                 return (
-                  <div key={`${product.id}-${JSON.stringify(item.selected_preferences ?? {})}`} className="flex gap-4 group">
+                  <div key={`${product.id}-${JSON.stringify(item.selected_preferences ?? {})}`} className="flex gap-4 group rounded-2xl border border-slate-200/70 bg-white p-3">
                     <div className="w-24 h-24 rounded-2xl bg-slate-50 overflow-hidden relative shrink-0 border border-slate-100">
                       {hasImage ? (
                         <Image src={product.media_urls[0]} alt={product.name} fill className="object-cover" sizes="96px" />
@@ -211,7 +211,7 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
         {/* Footer */}
         {items.length > 0 && (
           <div className="p-6 bg-white border-t border-slate-100 sticky bottom-0">
-            <div className="space-y-3 mb-6 bg-slate-50 rounded-2xl p-4 border border-slate-100">
+            <div className="space-y-3 mb-4 bg-slate-50 rounded-2xl p-4 border border-slate-100">
               {totalNgn > 0 && (
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-500 font-medium">Fiat Subtotal</span>
@@ -230,6 +230,12 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
                 </div>
               )}
             </div>
+
+            {!isMixed && (
+              <p className="text-xs text-slate-500 mb-4">
+                Total: ${totalUsd().toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            )}
 
             <button
               onClick={handleCheckout}

@@ -95,28 +95,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="en">
       <head>
         <meta name="theme-color" content={themeColor} />
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-              :root { --shop-primary: ${themeColor}; }
-            `,
-          }}
-        />
       </head>
-      <body className="bg-[#F9F9F9] min-h-screen font-sans antialiased flex flex-col">
+      <body className="shop-shell min-h-screen font-sans antialiased flex flex-col" style={{ '--shop-primary': themeColor } as React.CSSProperties}>
         <ShopProvider shop={shop} products={products} slug={slug}>
-          <div className="flex-1">
+          <div className="relative z-10 flex-1">
             {children}
           </div>
 
           {/* Powered by Zendfi */}
-          <footer className="py-12 text-center shrink-0">
+          <footer className="relative z-10 py-12 text-center shrink-0">
             <a
               href="https://zendfi.tech"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition"
             >
               <span>Powered by</span>
               <img src="/img/zendfi-logo.png" alt="ZendFi" className="h-3.5 opacity-80" />

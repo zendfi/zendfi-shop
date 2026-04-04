@@ -63,7 +63,7 @@ export interface ProductPreferenceDefinition {
   id: string;
   key: string;
   label: string;
-  type: 'select' | 'text' | 'number' | 'boolean';
+  type: 'select' | 'dropdown' | 'text' | 'number' | 'boolean';
   required: boolean;
   constraints_json: Record<string, unknown>;
   display_order: number;

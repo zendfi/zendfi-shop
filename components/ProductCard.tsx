@@ -34,17 +34,17 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
 
   return (
     <div
-      className="group bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 flex flex-col"
+      className="group bg-white/95 rounded-3xl overflow-hidden cursor-pointer hover:-translate-y-1 transition-all duration-300 border border-slate-200/70 shadow-[0_12px_32px_rgba(15,23,42,0.06)] flex flex-col"
       onClick={() => router.push(`/product/${product.id}`)}
     >
       {/* Image Container */}
-      <div className="aspect-[4/5] bg-slate-50 relative overflow-hidden flex items-center justify-center">
+      <div className="aspect-[4/5] bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden flex items-center justify-center">
         {hasImage ? (
           <Image
             src={product.media_urls[0]}
             alt={product.name}
             fill
-            className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+            className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
           />
         ) : (
@@ -67,7 +67,7 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
       </div>
 
       {/* Info Container */}
-      <div className="p-4 flex flex-col flex-1">
+      <div className="p-4 sm:p-5 flex flex-col flex-1">
         <h3 className="text-sm font-semibold text-slate-900 leading-tight line-clamp-1">{product.name}</h3>
         <div className="flex-1">
           {product.description && (
@@ -77,7 +77,7 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
           )}
         </div>
         
-        <div className="mt-4 pt-4 border-t border-slate-100/50 flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-slate-100/80 flex items-center justify-between">
           <p className="text-sm font-bold text-slate-900" style={{ color: themeColor }}>
             {product.onramp && product.amount_ngn
               ? `₦${product.amount_ngn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
@@ -89,7 +89,7 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
         <button
           onClick={handleAddToBag}
           disabled={outOfStock}
-          className="w-full mt-3 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:bg-opacity-90"
+          className="w-full mt-3 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 group-hover:shadow-[0_8px_18px_rgba(15,23,42,0.14)] hover:bg-opacity-90"
           style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
         >
           {outOfStock ? 'Sold Out' : hasRequiredPreferences ? 'Choose Options' : 'Quick Add'}
