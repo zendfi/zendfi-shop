@@ -5,7 +5,12 @@ import type { CartItem, CartItemPreference, ShopProduct } from './types';
 interface BagState {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (product: ShopProduct, quantity?: number, preferences?: CartItemPreference[]) => void;
+  addItem: (
+    product: ShopProduct,
+    quantity?: number,
+    preferences?: CartItemPreference[],
+    openBag?: boolean,
+  ) => void;
   removeItem: (key: string) => void;
   updateQuantity: (key: string, quantity: number) => void;
   clearBag: () => void;
@@ -51,7 +56,7 @@ export const useBag = create<BagState>()(
       items: [],
       isOpen: false,
 
-      addItem: (product, quantity = 1, preferences) => {
+      addItem: (product, quantity = 1, preferences, openBag = true) => {
         set((state) => {
           const normalizedPreferences = normalizePreferences(preferences);
           const key = buildCartItemKey(product.id, normalizedPreferences);
@@ -63,7 +68,7 @@ export const useBag = create<BagState>()(
                   ? { ...i, quantity: i.quantity + quantity }
                   : i,
               ),
-              isOpen: true,
+              isOpen: openBag ? true : state.isOpen,
             };
           }
           return {
@@ -76,7 +81,7 @@ export const useBag = create<BagState>()(
                 preferences: normalizedPreferences.length ? normalizedPreferences : undefined,
               },
             ],
-            isOpen: true,
+            isOpen: openBag ? true : state.isOpen,
           };
         });
       },

@@ -12,6 +12,10 @@ export interface Shop {
   welcome_message?: string | null;
   about?: string | null;
   contact_email?: string | null;
+  hero_image_url?: string | null;
+  hero_background_color?: string | null;
+  hero_image_focus?: string | null;
+  hero_image_scaling?: string | null;
   twitter_url?: string | null;
   facebook_url?: string | null;
   instagram_url?: string | null;

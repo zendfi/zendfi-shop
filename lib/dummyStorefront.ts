@@ -18,6 +18,11 @@ function buildDummyShop(slug: string, now: string): Shop {
     is_live: true,
     merchant_name: 'Zendfi Demo',
     welcome_message: 'Fresh finds every week',
+    hero_image_url:
+      'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=2000&q=80',
+    hero_background_color: '#0F766E',
+    hero_image_focus: 'center',
+    hero_image_scaling: 'cover',
     about:
       'This is a sample storefront populated with dummy products so you can work without the API.',
     contact_email: 'hello@zendfi.demo',

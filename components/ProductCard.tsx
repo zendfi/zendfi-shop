@@ -12,6 +12,8 @@ interface ProductCardProps {
 export default function ProductCard({ product, themeColor }: ProductCardProps) {
   const router = useRouter();
   const addItem = useBag((s) => s.addItem);
+  const updateQuantity = useBag((s) => s.updateQuantity);
+  const items = useBag((s) => s.items);
 
   const hasImage = product.media_urls && product.media_urls.length > 0;
   const stockLeft =
@@ -22,9 +24,24 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
   const metaLabel = product.onramp ? 'Bank transfer' : `${product.token} on-chain`;
   const availability = product.quantity_type === 'limited' ? 'Limited run' : 'Always available';
 
+  const matchingItems = items.filter((item) => item.product.id === product.id);
+  const inBagQuantity = matchingItems.reduce((sum, item) => sum + item.quantity, 0);
+  const primaryItem = matchingItems[0];
+
   const handleAddToBag = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!outOfStock) addItem(product);
+    if (!outOfStock) addItem(product, 1, undefined, false);
+  };
+
+  const handleIncrement = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!outOfStock) addItem(product, 1, undefined, false);
+  };
+
+  const handleDecrement = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!primaryItem) return;
+    updateQuantity(primaryItem.key, Math.max(0, primaryItem.quantity - 1));
   };
 
   return (
@@ -89,14 +106,40 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
           )}
         </div>
 
-        <button
-          onClick={handleAddToBag}
-          disabled={outOfStock}
-          className="w-full py-2 rounded text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mt-auto"
-          style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
-        >
-          {outOfStock ? 'Sold out' : 'Add to bag'}
-        </button>
+        {inBagQuantity > 0 ? (
+          <div className="mt-auto flex items-center justify-between gap-2 rounded border border-slate-200 bg-slate-50 px-2.5 py-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">In bag</p>
+              <p className="text-sm font-semibold text-slate-900">{inBagQuantity}</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleDecrement}
+                className="w-8 h-8 rounded border border-slate-200 bg-white flex items-center justify-center text-sm font-bold text-slate-600 hover:bg-slate-50 transition"
+                aria-label="Remove one"
+              >
+                -
+              </button>
+              <button
+                onClick={handleIncrement}
+                disabled={outOfStock}
+                className="w-8 h-8 rounded border border-slate-200 bg-white flex items-center justify-center text-sm font-bold text-slate-600 hover:bg-slate-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                aria-label="Add one"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={handleAddToBag}
+            disabled={outOfStock}
+            className="w-full py-2 rounded text-xs font-semibold text-white transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed mt-auto"
+            style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
+          >
+            {outOfStock ? 'Sold out' : 'Add to bag'}
+          </button>
+        )}
       </div>
     </div>
   );
