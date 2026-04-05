@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { getStorefront } from '@/lib/api';
+import { getDummyStorefront, isDummyDataEnabled, DUMMY_SHOP_SLUG } from '@/lib/dummyStorefront';
 import ShopProvider from '@/components/ShopProvider';
 import BagDrawer from '@/components/BagDrawer';
 import '@/app/globals.css';
@@ -42,10 +43,41 @@ async function getShopSlug(): Promise<string> {
 
 export async function generateMetadata(): Promise<Metadata> {
   const slug = await getShopSlug();
-  if (!slug) return { title: 'Shop' };
+  const allowDummy = isDummyDataEnabled();
+  if (!slug) {
+    if (!allowDummy) return { title: 'Shop' };
+    const dummy = getDummyStorefront(DUMMY_SHOP_SLUG);
+    return {
+      title: dummy.shop.name,
+      description: dummy.shop.description || `Shop at ${dummy.shop.name}`,
+      openGraph: {
+        title: dummy.shop.name,
+        description: dummy.shop.description || `Shop at ${dummy.shop.name}`,
+        siteName: dummy.shop.name,
+      },
+      icons: {
+        icon: '/favicon.ico',
+      },
+    };
+  }
 
   const data = await getStorefront(slug);
-  if (!data) return { title: 'Shop not found' };
+  if (!data) {
+    if (!allowDummy) return { title: 'Shop not found' };
+    const dummy = getDummyStorefront(slug || DUMMY_SHOP_SLUG);
+    return {
+      title: dummy.shop.name,
+      description: dummy.shop.description || `Shop at ${dummy.shop.name}`,
+      openGraph: {
+        title: dummy.shop.name,
+        description: dummy.shop.description || `Shop at ${dummy.shop.name}`,
+        siteName: dummy.shop.name,
+      },
+      icons: {
+        icon: '/favicon.ico',
+      },
+    };
+  }
 
   return {
     title: data.shop.name,
@@ -67,10 +99,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Fetch shop data
   const data = slug ? await getStorefront(slug) : null;
+  const allowDummy = isDummyDataEnabled();
+  const dummyData = !data && allowDummy ? getDummyStorefront(slug || DUMMY_SHOP_SLUG) : null;
+  const resolvedData = data ?? dummyData;
+  const resolvedSlug = data ? slug : dummyData?.shop.slug || slug;
 
-  console.log(`[layout] slug="${slug}" data=${data ? `found(${data.shop.name})` : 'null'}`);
+  console.log(
+    `[layout] slug="${slug}" data=${resolvedData ? `found(${resolvedData.shop.name})` : 'null'}`,
+  );
 
-  if (!data) {
+  if (!resolvedData) {
     return (
       <html lang="en">
         <body className="bg-white min-h-screen flex items-center justify-center font-sans">
@@ -88,34 +126,42 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     );
   }
 
-  const { shop, products } = data;
+  const { shop, products } = resolvedData;
   const themeColor = shop.theme_color || '#8B7BF7';
 
   return (
     <html lang="en">
       <head>
         <meta name="theme-color" content={themeColor} />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+              :root { --shop-primary: ${themeColor}; }
+            `,
+          }}
+        />
       </head>
-      <body className="shop-shell min-h-screen font-sans antialiased flex flex-col" style={{ '--shop-primary': themeColor } as React.CSSProperties}>
-        <ShopProvider shop={shop} products={products} slug={slug}>
-          <div className="relative z-10 flex-1">
+      <body className="bg-[#F8F9FA] min-h-screen font-sans antialiased flex flex-col">
+        <ShopProvider shop={shop} products={products} slug={resolvedSlug}>
+          <div className="flex-1">
             {children}
           </div>
 
           {/* Powered by Zendfi */}
-          <footer className="relative z-10 py-12 text-center shrink-0">
+          <footer className="py-12 text-center shrink-0">
             <a
               href="https://zendfi.tech"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition"
+              className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-600 transition"
             >
               <span>Powered by</span>
               <img src="/img/zendfi-logo.png" alt="ZendFi" className="h-3.5 opacity-80" />
             </a>
           </footer>
 
-          <BagDrawer slug={slug} />
+          <BagDrawer />
         </ShopProvider>
       </body>
     </html>

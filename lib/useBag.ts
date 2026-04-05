@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartItem, SelectedPreferences, ShopProduct } from './types';
+import type { CartItem, CartItemPreference, ShopProduct } from './types';
 
 interface BagState {
   items: CartItem[];
@@ -8,13 +8,11 @@ interface BagState {
   addItem: (
     product: ShopProduct,
     quantity?: number,
-    selected_preferences?: SelectedPreferences,
-    preference_upcharge_usd?: number,
+    preferences?: CartItemPreference[],
+    openBag?: boolean,
   ) => void;
-  removeItem: (productId: string) => void;
-  removeLineItem: (productId: string, selected_preferences?: SelectedPreferences) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
-  updateLineQuantity: (productId: string, selected_preferences: SelectedPreferences | undefined, quantity: number) => void;
+  removeItem: (key: string) => void;
+  updateQuantity: (key: string, quantity: number) => void;
   clearBag: () => void;
   openBag: () => void;
   closeBag: () => void;
@@ -22,8 +20,34 @@ interface BagState {
   totalUsd: () => number;
 }
 
-function prefKey(selected_preferences?: SelectedPreferences): string {
-  return JSON.stringify(selected_preferences ?? {});
+function normalizePreferences(preferences?: CartItemPreference[]): CartItemPreference[] {
+  if (!preferences?.length) return [];
+  return preferences
+    .map((pref) => ({
+      id: pref.id,
+      name: pref.name,
+      values: [...(pref.values || [])],
+    }))
+    .filter((pref) => pref.values.length > 0);
+}
+
+function buildPreferenceKey(preferences?: CartItemPreference[]): string {
+  const normalized = normalizePreferences(preferences)
+    .map((pref) => ({
+      id: pref.id || pref.name,
+      values: [...pref.values].sort(),
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
+
+  if (normalized.length === 0) return '';
+  return normalized
+    .map((pref) => `${pref.id}:${pref.values.join(',')}`)
+    .join('|');
+}
+
+function buildCartItemKey(productId: string, preferences?: CartItemPreference[]): string {
+  const prefKey = buildPreferenceKey(preferences);
+  return prefKey ? `${productId}::${prefKey}` : productId;
 }
 
 export const useBag = create<BagState>()(
@@ -32,70 +56,50 @@ export const useBag = create<BagState>()(
       items: [],
       isOpen: false,
 
-      addItem: (product, quantity = 1, selected_preferences, preference_upcharge_usd = 0) => {
+      addItem: (product, quantity = 1, preferences, openBag = true) => {
         set((state) => {
-          const key = prefKey(selected_preferences);
-          const existing = state.items.find(
-            (i) => i.product.id === product.id && prefKey(i.selected_preferences) === key,
-          );
+          const normalizedPreferences = normalizePreferences(preferences);
+          const key = buildCartItemKey(product.id, normalizedPreferences);
+          const existing = state.items.find((i) => i.key === key);
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.product.id === product.id && prefKey(i.selected_preferences) === key
+                i.key === key
                   ? { ...i, quantity: i.quantity + quantity }
                   : i,
               ),
-              isOpen: true,
+              isOpen: openBag ? true : state.isOpen,
             };
           }
           return {
             items: [
               ...state.items,
-              { product, quantity, selected_preferences, preference_upcharge_usd },
+              {
+                key,
+                product,
+                quantity,
+                preferences: normalizedPreferences.length ? normalizedPreferences : undefined,
+              },
             ],
-            isOpen: true,
+            isOpen: openBag ? true : state.isOpen,
           };
         });
       },
 
-      removeItem: (productId) => {
+      removeItem: (key) => {
         set((state) => ({
-          items: state.items.filter((i) => i.product.id !== productId),
+          items: state.items.filter((i) => i.key !== key),
         }));
       },
 
-      removeLineItem: (productId, selected_preferences) => {
-        const key = prefKey(selected_preferences);
-        set((state) => ({
-          items: state.items.filter(
-            (i) => !(i.product.id === productId && prefKey(i.selected_preferences) === key),
-          ),
-        }));
-      },
-
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (key, quantity) => {
         if (quantity <= 0) {
-          get().removeItem(productId);
+          get().removeItem(key);
           return;
         }
         set((state) => ({
           items: state.items.map((i) =>
-            i.product.id === productId ? { ...i, quantity } : i,
-          ),
-        }));
-      },
-
-      updateLineQuantity: (productId, selected_preferences, quantity) => {
-        if (quantity <= 0) {
-          get().removeLineItem(productId, selected_preferences);
-          return;
-        }
-        const key = prefKey(selected_preferences);
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.product.id === productId && prefKey(i.selected_preferences) === key
-              ? { ...i, quantity }
-              : i,
+            i.key === key ? { ...i, quantity } : i,
           ),
         }));
       },
@@ -107,15 +111,22 @@ export const useBag = create<BagState>()(
       totalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
       totalUsd: () =>
-        get().items.reduce(
-          (sum, i) => sum + ((i.product.price_usd + (i.preference_upcharge_usd ?? 0)) * i.quantity),
-          0,
-        ),
+        get().items.reduce((sum, i) => sum + i.product.price_usd * i.quantity, 0),
     }),
     {
       name: 'zendfi-shop-bag',
       partialize: (state) => ({ items: state.items }),
       skipHydration: true,
+      migrate: (persistedState) => {
+        const state = persistedState as BagState;
+        if (!state?.items) return persistedState;
+        const items = state.items.map((item) => {
+          if (item.key) return item;
+          const key = buildCartItemKey(item.product.id, item.preferences);
+          return { ...item, key };
+        });
+        return { ...state, items };
+      },
     },
   ),
 );
