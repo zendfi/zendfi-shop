@@ -1,14 +1,15 @@
 'use client';
 
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
 import { cartCheckout } from '@/lib/api';
 import Header from '@/components/Header';
+import CheckoutSummaryModal from '@/components/CheckoutSummaryModal';
 import { ArrowLeft, ImageIcon, Minus, Plus, Building2, Coins, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
-import type { SelectedPreferences } from '@/lib/types';
+import type { ProductRelationshipType, SelectedPreferences } from '@/lib/types';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -23,6 +24,7 @@ export default function ProductDetailPage({ params }: Props) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [buyingNow, setBuyingNow] = useState(false);
+  const [showCheckoutSummary, setShowCheckoutSummary] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPreferences, setSelectedPreferences] = useState<SelectedPreferences>({});
 
@@ -86,11 +88,16 @@ export default function ProductDetailPage({ params }: Props) {
     setError(null);
   };
 
-  const handleBuyNow = async () => {
+  const openBuyNowSummary = () => {
     if (missingRequired) {
       setError('Please complete all required product preferences.');
       return;
     }
+    setError(null);
+    setShowCheckoutSummary(true);
+  };
+
+  const handleBuyNow = async () => {
     setBuyingNow(true);
     setError(null);
     try {
@@ -101,15 +108,82 @@ export default function ProductDetailPage({ params }: Props) {
       clearBag();
       window.location.href = res.payment_url;
     } catch (err: unknown) {
+      setShowCheckoutSummary(false);
       setError(err instanceof Error ? err.message : 'Checkout failed');
     } finally {
       setBuyingNow(false);
     }
   };
 
+  const relationshipLabels: Record<ProductRelationshipType, string> = {
+    upsell: 'Upgrade picks',
+    cross_sell: 'Pairs well with',
+    bundle: 'Bundle it with',
+  };
+
+  const groupedRelatedProducts = useMemo(() => {
+    const byId = new Map(products.map((item) => [item.id, item]));
+    const grouped: Record<ProductRelationshipType, typeof products> = {
+      upsell: [],
+      cross_sell: [],
+      bundle: [],
+    };
+
+    for (const relation of product.related_products || []) {
+      if (relation.related_product_id === product.id) continue;
+      const related = byId.get(relation.related_product_id);
+      if (!related || !related.is_active) continue;
+      if (grouped[relation.relationship_type].some((item) => item.id === related.id)) continue;
+      grouped[relation.relationship_type].push(related);
+    }
+
+    return grouped;
+  }, [product.id, product.related_products, products]);
+
+  const hasRelatedRecommendations =
+    groupedRelatedProducts.upsell.length > 0 ||
+    groupedRelatedProducts.cross_sell.length > 0 ||
+    groupedRelatedProducts.bundle.length > 0;
+
+  const buyNowSummaryItems = [
+    {
+      id: product.id,
+      name: product.name,
+      quantity,
+      amount: product.onramp && product.amount_ngn
+        ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+        : `$${((product.price_usd + preferenceUpcharge) * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      subtitle: product.onramp ? 'NGN transfer checkout' : `${product.token} checkout`,
+    },
+  ];
+
+  const buyNowSummaryRows = [
+    {
+      label: 'Subtotal',
+      value: product.onramp && product.amount_ngn
+        ? `₦${(product.amount_ngn * quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+        : `$${((product.price_usd + preferenceUpcharge) * quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+    },
+    {
+      label: 'Payment method',
+      value: product.onramp ? 'Bank transfer checkout' : `${product.token} checkout`,
+    },
+  ];
+
   return (
     <div className="min-h-screen font-sans flex flex-col">
       <Header />
+
+      <CheckoutSummaryModal
+        open={showCheckoutSummary}
+        onClose={() => setShowCheckoutSummary(false)}
+        onConfirm={handleBuyNow}
+        title="Review your purchase"
+        items={buyNowSummaryItems}
+        summaryRows={buyNowSummaryRows}
+        confirmLabel="Confirm and continue"
+        confirmLoading={buyingNow}
+      />
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-32 sm:pb-12 w-full">
         {/* Breadcrumb / Back */}
@@ -279,7 +353,7 @@ export default function ProductDetailPage({ params }: Props) {
                   {outOfStock ? 'Sold out' : 'Add to bag'}
                 </button>
                 <button
-                  onClick={handleBuyNow}
+                  onClick={openBuyNowSummary}
                   disabled={outOfStock || buyingNow}
                   className="flex-1 py-4 sm:py-5 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center hover:opacity-90 shadow-[0_14px_32px_rgba(15,23,42,0.16)]"
                   style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
@@ -327,6 +401,59 @@ export default function ProductDetailPage({ params }: Props) {
             </div>
           </div>
         </div>
+
+        {hasRelatedRecommendations && (
+          <section className="mt-14 sm:mt-16">
+            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
+              <h2 className="text-2xl font-heading font-bold text-slate-900 mb-2">Would be perfect with</h2>
+              <p className="text-sm text-slate-500 mb-6">Handpicked suggestions to complete your order.</p>
+
+              <div className="space-y-8">
+                {(Object.keys(groupedRelatedProducts) as ProductRelationshipType[]).map((type) => {
+                  const relatedProducts = groupedRelatedProducts[type];
+                  if (relatedProducts.length === 0) return null;
+
+                  return (
+                    <div key={type}>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">{relationshipLabels[type]}</h3>
+                      <div className="grid grid-cols-1 min-[430px]:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {relatedProducts.map((relatedProduct) => (
+                          <a
+                            key={relatedProduct.id}
+                            href={`/product/${relatedProduct.id}`}
+                            className="rounded-2xl border border-slate-200 bg-white p-3 hover:border-slate-300 hover:shadow-[0_8px_22px_rgba(15,23,42,0.08)] transition-all"
+                          >
+                            <div className="aspect-[4/3] rounded-xl bg-slate-100 overflow-hidden mb-3 relative">
+                              {relatedProduct.media_urls?.[0] ? (
+                                <Image
+                                  src={relatedProduct.media_urls[0]}
+                                  alt={relatedProduct.name}
+                                  fill
+                                  className="object-cover"
+                                  sizes="(max-width: 768px) 50vw, 33vw"
+                                />
+                              ) : (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <ImageIcon size={28} className="text-slate-300" strokeWidth={1.3} />
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-sm font-semibold text-slate-900 line-clamp-2">{relatedProduct.name}</p>
+                            <p className="text-sm font-bold mt-1" style={{ color: themeColor }}>
+                              {relatedProduct.onramp && relatedProduct.amount_ngn
+                                ? `₦${relatedProduct.amount_ngn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+                                : `$${relatedProduct.price_usd.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
+                            </p>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       {!outOfStock && (
@@ -348,7 +475,7 @@ export default function ProductDetailPage({ params }: Props) {
               Add to bag
             </button>
             <button
-              onClick={handleBuyNow}
+              onClick={openBuyNowSummary}
               disabled={buyingNow || missingRequired}
               className="flex-1 py-3 rounded-xl text-xs font-bold text-white disabled:opacity-50"
               style={{ backgroundColor: themeColor }}

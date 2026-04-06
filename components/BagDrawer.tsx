@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useBag } from '@/lib/useBag';
 import { cartCheckout } from '@/lib/api';
 import { useShop } from '@/components/ShopProvider';
+import CheckoutSummaryModal from '@/components/CheckoutSummaryModal';
 import { X, ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -15,6 +16,7 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
   const { shop } = useShop();
   const { items, isOpen, closeBag, removeLineItem, updateLineQuantity, clearBag, totalUsd } = useBag();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [showCheckoutSummary, setShowCheckoutSummary] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const themeColor = shop.theme_color;
@@ -71,10 +73,17 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
         window.location.href = res.payment_url;
       }
     } catch (err: unknown) {
+      setShowCheckoutSummary(false);
       setError(err instanceof Error ? err.message : 'Checkout failed. Please try again.');
     } finally {
       setCheckingOut(false);
     }
+  };
+
+  const openCheckoutSummary = () => {
+    if (items.length === 0) return;
+    setError(null);
+    setShowCheckoutSummary(true);
   };
 
   if (!isOpen) return null;
@@ -88,9 +97,41 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
     0
   );
   const cryptoToken = cryptoItems[0]?.product.token || 'USDC';
+  const checkoutSummaryItems = items.map((item) => ({
+    id: `${item.product.id}-${JSON.stringify(item.selected_preferences ?? {})}`,
+    name: item.product.name,
+    quantity: item.quantity,
+    amount: item.product.onramp && item.product.amount_ngn
+      ? `₦${(item.product.amount_ngn * item.quantity).toLocaleString('en-NG', { minimumFractionDigits: 0 })}`
+      : `$${((item.product.price_usd + (item.preference_upcharge_usd ?? 0)) * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+    subtitle: item.product.onramp ? 'NGN transfer checkout' : `${item.product.token} checkout`,
+  }));
+  const checkoutSummaryRows = [
+    ...(totalNgn > 0
+      ? [{ label: 'Fiat subtotal', value: `₦${totalNgn.toLocaleString('en-NG', { minimumFractionDigits: 0 })}` }]
+      : []),
+    ...(totalCrypto > 0
+      ? [{ label: 'Crypto subtotal', value: `$${totalCrypto.toLocaleString('en-US', { minimumFractionDigits: 2 })} (${cryptoToken})` }]
+      : []),
+    {
+      label: 'Checkout flow',
+      value: isMixed ? 'Split into fiat + crypto payments' : onrampItems.length > 0 ? 'Single fiat checkout' : 'Single crypto checkout',
+    },
+  ];
 
   return (
     <>
+      <CheckoutSummaryModal
+        open={showCheckoutSummary}
+        onClose={() => setShowCheckoutSummary(false)}
+        onConfirm={handleCheckout}
+        title="Review your order"
+        items={checkoutSummaryItems}
+        summaryRows={checkoutSummaryRows}
+        confirmLabel={isMixed ? 'Confirm and continue to checkouts' : 'Confirm and continue'}
+        confirmLoading={checkingOut}
+      />
+
       <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 transition-opacity" onClick={closeBag} />
 
       <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white/95 backdrop-blur-xl sm:shadow-2xl flex flex-col rounded-t-3xl sm:rounded-none h-[92dvh] sm:max-h-full transform transition-transform duration-500 ease-in-out translate-y-0 sm:translate-x-0 border-l border-white">
@@ -238,12 +279,12 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
             )}
 
             <button
-              onClick={handleCheckout}
+              onClick={openCheckoutSummary}
               disabled={checkingOut}
               className="w-full py-4 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-95 shadow-lg shadow-black/10 flex justify-center items-center"
               style={{ backgroundColor: themeColor }}
             >
-              {checkingOut ? 'Preparing Checkout…' : isMixed ? 'Checkout Items (Multiple)' : 'Checkout securely'}
+              {checkingOut ? 'Preparing Checkout…' : 'Proceed to checkout'}
             </button>
             {error && (
               <p className="mt-3 text-xs text-red-500 font-medium text-center bg-red-50 py-2 rounded-lg border border-red-100">

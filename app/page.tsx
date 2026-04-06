@@ -19,7 +19,7 @@ interface PersistedFilters {
 export default function ShopHomePage() {
   const { shop, products } = useShop();
   const [search, setSearch] = useState('');
-  const [showStickyTools, setShowStickyTools] = useState(false);
+  const [showMobileFilterFab, setShowMobileFilterFab] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [recentlyViewedIds, setRecentlyViewedIds] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>('featured');
@@ -97,7 +97,7 @@ export default function ShopHomePage() {
   }, [availability, shop.slug, sortBy, tokenFilter]);
 
   useEffect(() => {
-    const onScroll = () => setShowStickyTools(window.scrollY > 520);
+    const onScroll = () => setShowMobileFilterFab(window.scrollY > 520);
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -124,12 +124,6 @@ export default function ShopHomePage() {
       .slice(0, 8),
     [products, recentlyViewedIds],
   );
-
-  const focusSearch = () => {
-    const searchInput = document.getElementById('product-search') as HTMLInputElement | null;
-    searchInput?.focus();
-    searchInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
 
   return (
     <div className="min-h-screen font-sans">
@@ -236,33 +230,20 @@ export default function ShopHomePage() {
         </div>
       )}
 
-      {showStickyTools && (
-        <div className="sm:hidden fixed top-[74px] left-0 right-0 z-30 px-4" style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}>
-          <div className="mx-auto max-w-7xl rounded-full bg-white/92 backdrop-blur-xl border border-slate-200 shadow-[0_10px_24px_rgba(15,23,42,0.12)] px-3 py-2 flex items-center justify-between gap-3">
-            <button
-              onClick={focusSearch}
-              className="flex items-center gap-2 text-xs font-semibold text-slate-700"
-            >
-              <SearchIcon size={14} className="text-slate-500" />
-              Search products
-            </button>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowMobileFilters(true)}
-                className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-700 border border-slate-200 rounded-full px-2.5 py-1"
-              >
-                <SlidersHorizontal size={12} />
-                Filters
-                {activeFilterCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-slate-900 text-white text-[10px] inline-flex items-center justify-center">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-              <span className="text-[11px] font-semibold text-slate-500">{filtered.length}</span>
-            </div>
-          </div>
-        </div>
+      {showMobileFilterFab && (
+        <button
+          onClick={() => setShowMobileFilters(true)}
+          className="sm:hidden fixed left-0 top-[66%] -translate-y-1/2 z-30 rounded-r-2xl border border-slate-200 border-l-0 bg-white/95 backdrop-blur px-3 py-3 shadow-[0_12px_24px_rgba(15,23,42,0.14)] inline-flex items-center gap-2"
+          aria-label="Open filters"
+        >
+          <SlidersHorizontal size={16} className="text-slate-700" />
+          <span className="text-[11px] font-semibold text-slate-700">Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="w-4 h-4 rounded-full bg-slate-900 text-white text-[10px] inline-flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       )}
 
       <main className="pb-20 pt-2 sm:pt-5">

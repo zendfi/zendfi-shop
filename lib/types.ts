@@ -49,7 +49,17 @@ export interface ShopProduct {
   collect_customer_info: boolean;
   amount_ngn: number | null;
   preferences?: ProductPreferenceDefinition[];
+  related_products?: ProductRelationship[];
   created_at: string;
+}
+
+export type ProductRelationshipType = 'upsell' | 'cross_sell' | 'bundle';
+
+export interface ProductRelationship {
+  id: string;
+  related_product_id: string;
+  relationship_type: ProductRelationshipType;
+  display_order: number;
 }
 
 export interface ProductPreferenceOption {
