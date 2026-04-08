@@ -246,7 +246,7 @@ export default function ShopHomePage() {
         </button>
       )}
 
-      <main className="pb-20 pt-[72px] sm:pt-[78px]">
+      <main className="pb-20 pt-0">
         <section className="w-full reveal-up">
           <div className="relative w-full h-[56svh] min-h-[420px] sm:h-[520px] overflow-hidden bg-slate-100 border-b border-slate-200">
             {hasHero ? (
