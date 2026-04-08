@@ -70,11 +70,11 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
 
   return (
     <div
-      className="group bg-white/95 rounded-3xl overflow-hidden cursor-pointer hover:-translate-y-1 transition-all duration-300 border border-slate-200/70 shadow-[0_12px_32px_rgba(15,23,42,0.06)] flex flex-col"
+      className="group bg-white rounded-xl overflow-hidden cursor-pointer transition border border-slate-200 flex flex-col"
       onClick={pushToProduct}
     >
       {/* Image Container */}
-      <div className="aspect-[4/5] bg-gradient-to-br from-slate-100 to-slate-50 relative overflow-hidden flex items-center justify-center">
+      <div className="aspect-[4/5] bg-slate-100 relative overflow-hidden flex items-center justify-center">
         {hasImage ? (
           <Image
             src={product.media_urls[0]}
@@ -90,12 +90,12 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
         {/* Badges Overlay */}
         <div className="absolute top-2 left-2 flex flex-col gap-2 z-10">
            {outOfStock && (
-             <span className="text-[10px] uppercase tracking-wider font-bold text-slate-800 bg-white/90 backdrop-blur px-2.5 py-1 flex items-center shadow-sm">
+             <span className="text-[10px] uppercase tracking-wider font-bold text-slate-800 bg-white border border-slate-200 px-2.5 py-1 flex items-center">
                Sold out
              </span>
            )}
            {stockLeft !== null && stockLeft <= 5 && stockLeft > 0 && (
-             <span className="text-[10px] uppercase tracking-wider font-bold text-amber-800 bg-amber-200/90 backdrop-blur px-2.5 py-1 flex items-center shadow-sm">
+             <span className="text-[10px] uppercase tracking-wider font-bold text-amber-800 bg-amber-100 border border-amber-200 px-2.5 py-1 flex items-center">
                Low Stock
              </span>
            )}
@@ -126,7 +126,7 @@ export default function ProductCard({ product, themeColor }: ProductCardProps) {
           <button
             onClick={handleAddToBag}
             disabled={outOfStock}
-            className="w-full mt-3 py-2.5 rounded-xl text-xs font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 group-hover:shadow-[0_8px_18px_rgba(15,23,42,0.14)] hover:bg-opacity-90"
+            className="w-full mt-3 py-2.5 rounded-xl text-xs font-bold text-white transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
           >
             {outOfStock ? 'Sold Out' : 'Choose Options'}

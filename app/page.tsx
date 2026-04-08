@@ -131,7 +131,7 @@ export default function ShopHomePage() {
 
       {showMobileFilters && (
         <div className="fixed inset-0 z-50 sm:hidden" onClick={() => setShowMobileFilters(false)}>
-          <div className="absolute inset-0 bg-slate-900/35 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-slate-900/35" />
           <div
             className="absolute left-0 right-0 bottom-0 rounded-t-3xl bg-white border-t border-slate-200 p-4 max-h-[78dvh] overflow-y-auto"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
@@ -233,7 +233,7 @@ export default function ShopHomePage() {
       {showMobileFilterFab && (
         <button
           onClick={() => setShowMobileFilters(true)}
-          className="sm:hidden fixed left-0 top-[66%] -translate-y-1/2 z-30 rounded-r-2xl border border-slate-200 border-l-0 bg-white/95 backdrop-blur px-3 py-3 shadow-[0_12px_24px_rgba(15,23,42,0.14)] inline-flex items-center gap-2"
+          className="sm:hidden fixed left-0 top-[66%] -translate-y-1/2 z-30 rounded-r-2xl border border-slate-200 border-l-0 bg-white px-3 py-3 inline-flex items-center gap-2"
           aria-label="Open filters"
         >
           <SlidersHorizontal size={16} className="text-slate-700" />
@@ -246,9 +246,9 @@ export default function ShopHomePage() {
         </button>
       )}
 
-      <main className="pb-20 pt-2 sm:pt-5">
+      <main className="pb-20 pt-[72px] sm:pt-[78px]">
         <section className="w-full reveal-up">
-          <div className="relative w-full h-[64svh] min-h-[460px] sm:h-[620px] overflow-hidden">
+          <div className="relative w-full h-[56svh] min-h-[420px] sm:h-[520px] overflow-hidden bg-slate-100 border-b border-slate-200">
             {hasHero ? (
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -263,7 +263,7 @@ export default function ShopHomePage() {
               <div className="absolute inset-0" style={{ backgroundColor: themeColor }} />
             )}
 
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/72 via-slate-900/42 to-slate-900/20" />
+            <div className="absolute inset-0 bg-slate-900/40" />
             <div className="absolute inset-0 flex items-end sm:items-center">
               <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
                 <div className="max-w-3xl pb-8 sm:pb-0">
@@ -293,8 +293,8 @@ export default function ShopHomePage() {
             </div>
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
-            <div className="surface-card rounded-3xl grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-5 border border-slate-200/70">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
+            <div className="bg-white rounded-xl grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 p-4 sm:p-5 border border-slate-200">
               <div className="rounded-2xl bg-white border border-slate-200 px-4 py-3 flex items-center gap-3">
                 <ShieldCheck size={18} className="text-slate-500" />
                 <div>
@@ -322,7 +322,7 @@ export default function ShopHomePage() {
 
         {recentlyViewed.length > 0 && (
           <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:hidden">
-            <div className="surface-card rounded-3xl p-4">
+            <div className="bg-white rounded-xl p-4 border border-slate-200">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles size={14} className="text-slate-500" />
                 <h3 className="text-sm font-heading font-bold text-slate-900">Recently Viewed</h3>
@@ -342,7 +342,7 @@ export default function ShopHomePage() {
         )}
 
         <section id="products" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 sm:mt-14 reveal-up reveal-up-delay">
-          <div className="surface-card rounded-3xl p-5 sm:p-7">
+          <div className="bg-white rounded-xl p-5 sm:p-7 border border-slate-200">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-7 gap-4">
               <div>
                 <h2 className="text-2xl sm:text-3xl font-heading font-bold text-slate-900">Featured Products</h2>

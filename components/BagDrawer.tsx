@@ -132,12 +132,12 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
         confirmLoading={checkingOut}
       />
 
-      <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 transition-opacity" onClick={closeBag} />
+      <div className="fixed inset-0 bg-slate-900/40 z-50 transition-opacity" onClick={closeBag} />
 
-      <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white/95 backdrop-blur-xl sm:shadow-2xl flex flex-col rounded-t-3xl sm:rounded-none h-[92dvh] sm:max-h-full transform transition-transform duration-500 ease-in-out translate-y-0 sm:translate-x-0 border-l border-white">
+      <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white flex flex-col rounded-t-3xl sm:rounded-none h-[92dvh] sm:max-h-full transform transition-transform duration-500 ease-in-out translate-y-0 sm:translate-x-0 border-l border-slate-200">
         
         {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 bg-white/90 sticky top-0 z-10 backdrop-blur">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 bg-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <ShoppingBag size={24} className="text-slate-800" strokeWidth={1.5} />
             <h2 className="font-heading font-bold text-xl text-slate-900">Your Bag</h2>

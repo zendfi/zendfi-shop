@@ -32,3 +32,19 @@ export async function cartCheckout(
   }
   return res.json();
 }
+
+export async function trackStorefrontVisit(
+  slug: string,
+  body: { session_id?: string; page_path?: string },
+): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/api/v1/shops/${slug}/visit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      keepalive: true,
+    });
+  } catch {
+    // Visit tracking is best-effort and should never block storefront UX.
+  }
+}

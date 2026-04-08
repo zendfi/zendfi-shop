@@ -185,7 +185,7 @@ export default function ProductDetailPage({ params }: Props) {
         confirmLoading={buyingNow}
       />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-32 sm:pb-12 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[82px] sm:pt-[92px] pb-32 sm:pb-12 w-full">
         {/* Breadcrumb / Back */}
         <button
           onClick={() => router.back()}
@@ -198,7 +198,7 @@ export default function ProductDetailPage({ params }: Props) {
         <div className="flex flex-col lg:flex-row gap-12 lg:gap-20">
           {/* Left: Image Gallery */}
           <div className="w-full lg:w-1/2 flex flex-col gap-4">
-            <div className="aspect-[4/5] sm:aspect-square bg-gradient-to-br from-slate-100 to-slate-50 rounded-3xl overflow-hidden relative border border-slate-200/60 shadow-[0_14px_32px_rgba(15,23,42,0.08)]">
+            <div className="aspect-[4/5] sm:aspect-square bg-slate-100 rounded-xl overflow-hidden relative border border-slate-200">
               {images.length > 0 ? (
                 <Image
                   src={images[selectedImage]}
@@ -236,7 +236,7 @@ export default function ProductDetailPage({ params }: Props) {
 
           {/* Right: Product Details */}
           <div className="w-full lg:w-1/2 flex flex-col">
-            <div className="lg:sticky lg:top-24 bg-white/78 backdrop-blur-xl border border-white rounded-3xl p-5 sm:p-7 shadow-[0_18px_46px_rgba(15,23,42,0.08)]">
+            <div className="lg:sticky lg:top-24 bg-white border border-slate-200 rounded-xl p-5 sm:p-7">
               {/* Badges */}
               {stockLeft !== null && stockLeft > 0 && stockLeft <= 10 && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold uppercase tracking-wider mb-4">
@@ -270,18 +270,24 @@ export default function ProductDetailPage({ params }: Props) {
                         {pref.label}{pref.required ? ' *' : ''}
                       </label>
                       {isSelectLike(pref.type) && (
-                        <select
-                          value={String(selectedPreferences[pref.key] ?? '')}
-                          onChange={(e) => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: e.target.value }))}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900"
-                        >
-                          <option value="">Select {pref.label}</option>
-                          {pref.options.filter((opt) => opt.is_active).map((opt) => (
-                            <option key={opt.id} value={opt.value}>
-                              {opt.label}{opt.upcharge_usd > 0 ? ` (+$${opt.upcharge_usd.toFixed(2)})` : ''}
-                            </option>
-                          ))}
-                        </select>
+                        <div className="flex flex-wrap gap-2">
+                          {pref.options.filter((opt) => opt.is_active).map((opt) => {
+                            const selected = selectedPreferences[pref.key] === opt.value;
+                            return (
+                              <button
+                                type="button"
+                                key={opt.id}
+                                onClick={() => setSelectedPreferences((prev) => ({ ...prev, [pref.key]: opt.value }))}
+                                className={`px-3 py-2 rounded-xl text-sm border transition ${selected
+                                  ? 'text-white border-slate-900 bg-slate-900'
+                                  : 'text-slate-700 border-slate-200 bg-white'}
+                                  `}
+                              >
+                                {opt.label}{opt.upcharge_usd > 0 ? ` (+$${opt.upcharge_usd.toFixed(2)})` : ''}
+                              </button>
+                            );
+                          })}
+                        </div>
                       )}
                       {pref.type === 'text' && (
                         <input
@@ -355,7 +361,7 @@ export default function ProductDetailPage({ params }: Props) {
                 <button
                   onClick={openBuyNowSummary}
                   disabled={outOfStock || buyingNow}
-                  className="flex-1 py-4 sm:py-5 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center hover:opacity-90 shadow-[0_14px_32px_rgba(15,23,42,0.16)]"
+                  className="flex-1 py-4 sm:py-5 rounded-2xl text-sm font-bold text-white transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center hover:opacity-90"
                   style={{ backgroundColor: outOfStock ? '#94a3b8' : themeColor }}
                 >
                   {buyingNow ? 'Preparing…' : 'Buy it now'}
@@ -404,7 +410,7 @@ export default function ProductDetailPage({ params }: Props) {
 
         {hasRelatedRecommendations && (
           <section className="mt-14 sm:mt-16">
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-7 shadow-[0_14px_34px_rgba(15,23,42,0.08)]">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-7">
               <h2 className="text-2xl font-heading font-bold text-slate-900 mb-2">Would be perfect with</h2>
               <p className="text-sm text-slate-500 mb-6">Handpicked suggestions to complete your order.</p>
 
@@ -421,7 +427,7 @@ export default function ProductDetailPage({ params }: Props) {
                           <a
                             key={relatedProduct.id}
                             href={`/product/${relatedProduct.id}`}
-                            className="rounded-2xl border border-slate-200 bg-white p-3 hover:border-slate-300 hover:shadow-[0_8px_22px_rgba(15,23,42,0.08)] transition-all"
+                            className="rounded-2xl border border-slate-200 bg-white p-3 hover:border-slate-300 transition-all"
                           >
                             <div className="aspect-[4/3] rounded-xl bg-slate-100 overflow-hidden mb-3 relative">
                               {relatedProduct.media_urls?.[0] ? (
@@ -457,7 +463,7 @@ export default function ProductDetailPage({ params }: Props) {
       </main>
 
       {!outOfStock && (
-        <div className="fixed bottom-0 left-0 right-0 lg:hidden z-30 border-t border-slate-200 bg-white/95 backdrop-blur px-4 pt-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
+        <div className="fixed bottom-0 left-0 right-0 lg:hidden z-30 border-t border-slate-200 bg-white px-4 pt-3" style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))' }}>
           <div className="max-w-7xl mx-auto flex items-center gap-3">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold">Total</p>

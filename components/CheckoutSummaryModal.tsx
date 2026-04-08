@@ -40,10 +40,10 @@ export default function CheckoutSummaryModal({
 
   return (
     <div className="fixed inset-0 z-[120]" role="dialog" aria-modal="true">
-      <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-900/45" onClick={onClose} />
 
       <div className="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center p-3 sm:p-6">
-        <div className="w-full sm:max-w-lg rounded-3xl border border-slate-200 bg-white shadow-[0_24px_56px_rgba(15,23,42,0.2)] overflow-hidden">
+        <div className="w-full sm:max-w-lg rounded-3xl border border-slate-200 bg-white overflow-hidden">
           <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h3 className="text-lg font-heading font-bold text-slate-900">{title}</h3>
             <button

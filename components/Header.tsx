@@ -3,7 +3,7 @@
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
 import { ShoppingBag, Search, Info } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import AboutModal from '@/components/AboutModal';
 
 export default function Header() {
@@ -11,7 +11,6 @@ export default function Header() {
   const openBag = useBag((s) => s.openBag);
   const totalItems = useBag((s) => s.totalItems());
   const [showAbout, setShowAbout] = useState(false);
-  const [morphed, setMorphed] = useState(false);
 
   const themeColor = shop.theme_color;
   const hasAboutInfo = !!(
@@ -25,26 +24,16 @@ export default function Header() {
     searchInput?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  useEffect(() => {
-    const onScroll = () => setMorphed(window.scrollY > 96);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   return (
     <>
       {showAbout && <AboutModal shop={shop} onClose={() => setShowAbout(false)} />}
 
       <header
-        className={`sticky z-40 transition-all duration-500 ${morphed ? 'top-2 px-3 sm:px-6 lg:px-8' : 'top-0 px-0'}`}
+        className="fixed top-0 left-0 right-0 z-40 border-b border-slate-200 bg-white"
         style={{ paddingTop: 'max(env(safe-area-inset-top), 0px)' }}
       >
-        <div className={morphed ? 'max-w-7xl mx-auto' : 'w-full'}>
-          <div className={`bg-white/88 backdrop-blur-xl px-3 sm:px-6 flex items-center justify-between transition-all duration-500 ${morphed
-            ? 'rounded-full border border-white h-[54px] shadow-[0_10px_24px_rgba(15,23,42,0.12)]'
-            : 'rounded-none border-b border-slate-200/80 h-[60px] sm:h-[64px] shadow-[0_10px_28px_rgba(15,23,42,0.08)]'
-            }`}>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="h-[60px] sm:h-[64px] flex items-center justify-between">
             <div className="flex items-center min-w-0">
               <h1 className="font-heading font-bold text-base sm:text-lg text-slate-900 tracking-tight truncate">{shop.name}</h1>
             </div>
