@@ -4,10 +4,10 @@ import { use, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useShop } from '@/components/ShopProvider';
 import { useBag } from '@/lib/useBag';
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 import { cartCheckout } from '@/lib/api';
 import Header from '@/components/Header';
-import CheckoutSummaryModal from '@/components/CheckoutSummaryModal';
-import { ArrowLeft, ImageIcon, Minus, Plus, Building2, Coins, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ImageIcon, Minus, Plus, Building2, Coins, ShieldCheck, X } from 'lucide-react';
 import Image from 'next/image';
 import type { ProductRelationshipType, SelectedPreferences } from '@/lib/types';
 
@@ -27,6 +27,8 @@ export default function ProductDetailPage({ params }: Props) {
   const [showCheckoutSummary, setShowCheckoutSummary] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPreferences, setSelectedPreferences] = useState<SelectedPreferences>({});
+
+  useBodyScrollLock(showCheckoutSummary);
 
   const product = products.find((p) => p.id === id);
 
@@ -174,16 +176,73 @@ export default function ProductDetailPage({ params }: Props) {
     <div className="min-h-screen font-sans flex flex-col">
       <Header />
 
-      <CheckoutSummaryModal
-        open={showCheckoutSummary}
-        onClose={() => setShowCheckoutSummary(false)}
-        onConfirm={handleBuyNow}
-        title="Review your purchase"
-        items={buyNowSummaryItems}
-        summaryRows={buyNowSummaryRows}
-        confirmLabel="Confirm and continue"
-        confirmLoading={buyingNow}
-      />
+      {showCheckoutSummary && (
+        <div className="fixed inset-0 z-[120]" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-slate-900/45" onClick={() => setShowCheckoutSummary(false)} />
+
+          <div className="absolute inset-x-0 bottom-0 sm:inset-0 sm:flex sm:items-center sm:justify-center p-3 sm:p-6">
+            <div className="w-full sm:max-w-lg rounded-3xl border border-slate-200 bg-white overflow-hidden">
+              <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="text-lg font-heading font-bold text-slate-900">Review your purchase</h3>
+                <button
+                  type="button"
+                  onClick={() => setShowCheckoutSummary(false)}
+                  className="w-9 h-9 rounded-full bg-slate-100 text-slate-600 hover:text-slate-900 flex items-center justify-center"
+                  aria-label="Close checkout summary"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="px-5 sm:px-6 py-4 space-y-4 max-h-[60dvh] overflow-y-auto">
+                <div className="space-y-2">
+                  {buyNowSummaryItems.map((item) => (
+                    <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{item.name}</p>
+                          <p className="text-xs text-slate-500">Qty {item.quantity}</p>
+                          {item.subtitle && (
+                            <p className="text-xs text-slate-500 mt-0.5">{item.subtitle}</p>
+                          )}
+                        </div>
+                        <p className="text-sm font-bold text-slate-900">{item.amount}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 space-y-2.5">
+                  {buyNowSummaryRows.map((row, index) => (
+                    <div key={`${row.label}-${index}`} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-slate-500">{row.label}</span>
+                      <span className="font-semibold text-slate-900 text-right">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-3 flex items-start gap-2.5">
+                  <ShieldCheck size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-700 leading-relaxed">
+                    You will be redirected to a secure checkout page to complete this payment.
+                  </p>
+                </div>
+              </div>
+
+              <div className="px-5 sm:px-6 pb-5 sm:pb-6">
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  disabled={buyingNow}
+                  className="w-full py-3.5 rounded-xl bg-slate-900 text-white text-sm font-semibold disabled:opacity-60"
+                >
+                  {buyingNow ? 'Preparing checkout...' : 'Confirm and continue'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-[82px] sm:pt-[92px] pb-32 sm:pb-12 w-full">
         {/* Breadcrumb / Back */}
