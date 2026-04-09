@@ -103,7 +103,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </div>
 
           {/* Powered by Zendfi */}
-          <footer className="relative z-10 py-12 text-center shrink-0">
+          <footer className="relative z-0 py-12 text-center shrink-0">
             <a
               href="https://zendfi.tech"
               target="_blank"
