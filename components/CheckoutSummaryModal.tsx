@@ -1,6 +1,7 @@
 'use client';
 
 import { ShieldCheck, X } from 'lucide-react';
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 
 export interface CheckoutSummaryItem {
   id: string;
@@ -36,6 +37,8 @@ export default function CheckoutSummaryModal({
   confirmLabel,
   confirmLoading = false,
 }: CheckoutSummaryModalProps) {
+  useBodyScrollLock(open);
+
   if (!open) return null;
 
   return (

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useBag } from '@/lib/useBag';
 import { cartCheckout } from '@/lib/api';
 import { useShop } from '@/components/ShopProvider';
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 import CheckoutSummaryModal from '@/components/CheckoutSummaryModal';
 import { X, ShoppingBag, Plus, Minus, Trash2 } from 'lucide-react';
 import Image from 'next/image';
@@ -15,9 +16,25 @@ interface BagDrawerProps {
 export default function BagDrawer({ slug }: BagDrawerProps) {
   const { shop } = useShop();
   const { items, isOpen, closeBag, removeLineItem, updateLineQuantity, clearBag, totalUsd } = useBag();
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [showCheckoutSummary, setShowCheckoutSummary] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBodyScrollLock(shouldRender || showCheckoutSummary);
+
+  useEffect(() => {
+    if (isOpen) {
+      setShouldRender(true);
+      const raf = window.requestAnimationFrame(() => setIsVisible(true));
+      return () => window.cancelAnimationFrame(raf);
+    }
+
+    setIsVisible(false);
+    const timeout = window.setTimeout(() => setShouldRender(false), 320);
+    return () => window.clearTimeout(timeout);
+  }, [isOpen]);
 
   const themeColor = shop.theme_color;
 
@@ -86,7 +103,7 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
     setShowCheckoutSummary(true);
   };
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   const totalNgn = onrampItems.reduce(
     (s, i) => s + (i.product.amount_ngn ?? i.product.price_usd) * i.quantity,
@@ -132,9 +149,12 @@ export default function BagDrawer({ slug }: BagDrawerProps) {
         confirmLoading={checkingOut}
       />
 
-      <div className="fixed inset-0 bg-slate-900/40 z-50 transition-opacity" onClick={closeBag} />
+      <div
+        className={`fixed inset-0 bg-slate-900/40 z-50 transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={closeBag}
+      />
 
-      <div className="fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white flex flex-col rounded-t-3xl sm:rounded-none h-[92dvh] sm:max-h-full transform transition-transform duration-500 ease-in-out translate-y-0 sm:translate-x-0 border-l border-slate-200">
+      <div className={`fixed z-50 bottom-0 left-0 right-0 sm:bottom-0 sm:top-0 sm:right-0 sm:left-auto sm:w-[480px] sm:h-full bg-white flex flex-col rounded-t-3xl sm:rounded-none h-[92dvh] sm:max-h-full transform transition-transform duration-300 ease-out border-l border-slate-200 ${isVisible ? 'translate-y-0 sm:translate-x-0' : 'translate-y-full sm:translate-x-full'}`}>
         
         {/* Header */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-slate-100 bg-white sticky top-0 z-10">

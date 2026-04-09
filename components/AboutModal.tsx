@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import type { Shop } from '@/lib/types';
 import { X, Store, MapPin, Truck, Mail, Info, Clock, ExternalLink } from 'lucide-react';
+import { useBodyScrollLock } from '@/lib/useBodyScrollLock';
 
 interface Props {
     shop: Shop;
@@ -28,6 +29,8 @@ const INSTAGRAM_ICON = (
 );
 
 export default function AboutModal({ shop, onClose }: Props) {
+    useBodyScrollLock(true);
+
     const themeColor = shop.theme_color;
     const hasSocials = !!(shop.twitter_url || shop.facebook_url || shop.instagram_url);
     const hoursLabel = shop.is_24_hours
@@ -48,7 +51,7 @@ export default function AboutModal({ shop, onClose }: Props) {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             onClick={onClose}
         >
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-0" />
+            <div className="absolute inset-0 bg-slate-900/40 z-0" />
 
             <div
                 className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-slide-up sm:animate-none z-10 font-sans flex flex-col"
